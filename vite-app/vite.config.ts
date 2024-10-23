@@ -94,7 +94,7 @@ export default defineConfig({
   },
   plugins: [
     react(),
-    wfDesignerExtensionPlugin(['../nextjs-app/app/api/hello-world/route.ts']),
+    wfDesignerExtensionPlugin(['../nextjs-app/app/api/**/*.ts']),
   ],
   root: './',
   base: './',
