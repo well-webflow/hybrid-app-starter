@@ -1,0 +1,18 @@
+{
+  "name": "hybrid-webflow-app_nextjs-vite",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "concurrently": "^9.1.0"
+  },
+  "packageManager": "npm@10.8.1",
+  "devDependencies": {
+    "turbo": "^2.3.0"
+  }
+}
