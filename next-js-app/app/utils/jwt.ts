@@ -2,18 +2,48 @@ import { SignJWT, jwtVerify } from "jose";
 import { NextRequest } from "next/server";
 import db from "./database";
 
-// User interface
+/*
+  JWT Utility Functions
+  ---------------------
+  This file provides a comprehensive set of utilities for handling JSON Web Tokens (JWT) 
+  in a Next.js application. It manages authentication between Webflow's Designer Extension 
+  and our backend API.
+
+  Architecture:
+  - Uses JOSE library for JWT operations
+  - Implements HS256 algorithm for token signing
+  - Stores access tokens in database
+  - Handles token verification and extraction
+
+  Security:
+  - Tokens expire after 24 hours
+  - Uses WEBFLOW_CLIENT_SECRET for signing
+  - Validates signatures on every request
+  - Safely handles verification failures
+*/
+
 interface User {
   id: string;
   email: string;
 }
 
-// Add this interface above the verifyAuth function
 interface JWTPayload {
   user: User;
 }
 
-// Create session token
+/**
+ * Creates a signed JWT session token for authenticated users
+ *
+ * @param user - Object containing user ID and email
+ * @returns Promise containing:
+ *   - sessionToken: Signed JWT token
+ *   - exp: Token expiration timestamp
+ *
+ * Flow:
+ * 1. Encodes signing secret
+ * 2. Creates and signs token with 24h expiration
+ * 3. Verifies token and extracts expiration
+ */
 const createSessionToken = async (user: User) => {
   // Encode secret
   const secret = new TextEncoder().encode(process.env.WEBFLOW_CLIENT_SECRET);
@@ -33,7 +63,18 @@ const createSessionToken = async (user: User) => {
   };
 };
 
-// Verify authorization header
+/**
+ * Validates JWT token from request and retrieves associated access token
+ *
+ * @param request - Incoming Next.js request
+ * @returns Promise<string | null> - Access token if valid, null otherwise
+ *
+ * Flow:
+ * 1. Extracts Bearer token from Authorization header
+ * 2. Verifies token signature and expiration
+ * 3. Retrieves associated access token from database
+ * 4. Returns null if any step fails
+ */
 const verifyAuth = async (request: NextRequest) => {
   const authHeader = request.headers.get("authorization"); // Get authorization header from request
   const sessionToken = authHeader?.split(" ")[1]; // Extract the token from 'Bearer <token>'
@@ -64,7 +105,17 @@ const verifyAuth = async (request: NextRequest) => {
   }
 };
 
-// Helper to get access token from site ID
+/**
+ * Retrieves Webflow access token for a specific site
+ *
+ * @param request - Incoming request containing siteId in body
+ * @returns Promise<string | null> - Access token if found, null otherwise
+ *
+ * Flow:
+ * 1. Extracts siteId from request body
+ * 2. Looks up access token in database
+ * 3. Handles errors and missing tokens
+ */
 const getAccessToken = async (request: NextRequest) => {
   try {
     const body = await request.json();

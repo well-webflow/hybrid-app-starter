@@ -1,7 +1,11 @@
 import { WebflowClient } from "webflow-api";
 import { NextResponse } from "next/server";
 
-// Redirect to Webflow's authorization URL
+/**
+ * Authorize API Route Handler
+ * --------------------------
+ * This route generates and redirects to Webflow's authorization URL.
+ */
 export async function GET() {
   const authorizeUrl = WebflowClient.authorizeURL({
     scope: ["sites:read", "authorized_user:read"],

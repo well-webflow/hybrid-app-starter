@@ -1,6 +1,18 @@
 import ngrok from "@ngrok/ngrok";
 import chalk from "chalk";
 
+/**
+ * Ngrok Utility Functions
+ * ------------------------
+ * This file provides utility functions for managing ngrok tunnels.
+ */
+
+/**
+ * Draws a box around the content with a border.
+ *
+ * @param {string} content - The content to be displayed inside the box.
+ * @returns {string} The content wrapped in a box border.
+ */
 function drawBox(content: string): string {
   const lines = content.split("\n");
   const width = Math.max(...lines.map((line) => stripAnsi(line).length));
@@ -23,7 +35,12 @@ function drawBox(content: string): string {
   ].join("\n");
 }
 
-// Helper function to strip ANSI color codes when calculating string length
+/**
+ * Strips ANSI color codes from a string to calculate its length.
+ *
+ * @param {string} string - The string to strip ANSI color codes from.
+ * @returns {string} The string with ANSI color codes removed.
+ */
 function stripAnsi(string: string): string {
   return string.replace(/\u001b\[[0-9]{1,2}m/g, "");
 }
@@ -48,6 +65,11 @@ export async function startNgrok(port: number): Promise<string> {
   }
 }
 
+/**
+ * Sets up the development environment by starting an ngrok tunnel and displaying URLs.
+ *
+ * @returns {Promise<string>} The URL of the ngrok tunnel.
+ */
 export async function setupDevEnvironment(): Promise<string> {
   try {
     const PORT = parseInt(process.env.PORT || "3000");
