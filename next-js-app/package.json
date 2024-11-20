@@ -1,0 +1,36 @@
+{
+  "name": "next-js-app",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "ts-node --project tsconfig.server.json scripts/dev.ts",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "@ngrok/ngrok": "^1.4.1",
+    "boxen": "^6.2.1",
+    "chalk": "^4.1.2",
+    "jose": "^5.9.6",
+    "next": "15.0.3",
+    "ora": "^5.4.1",
+    "picocolors": "^1.1.1",
+    "react": "19.0.0-rc-66855b96-20241106",
+    "react-dom": "19.0.0-rc-66855b96-20241106",
+    "sqlite": "^5.1.1",
+    "sqlite3": "^5.1.7",
+    "webflow-api": "^2.4.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.6",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "@types/sqlite3": "^3.1.11",
+    "eslint": "^8",
+    "eslint-config-next": "15.0.3",
+    "postcss": "^8",
+    "tailwindcss": "^3.4.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.6.3"
+  }
+}
