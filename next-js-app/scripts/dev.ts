@@ -1,6 +1,6 @@
 import { createServer, IncomingMessage, ServerResponse } from "http";
 import next from "next";
-import { setupDevEnvironment } from "../app/utils/ngrokManager";
+import { setupDevEnvironment } from "../app/lib/utils/ngrokManager";
 
 async function dev() {
   const app = next({ dev: true });

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import jwt from "../../utils/jwt";
-import db from "../../utils/database";
+import jwt from "../../lib/utils/jwt";
+import db from "../../lib/utils/database";
 
 /*
     Token Exchange API Route
@@ -14,7 +14,7 @@ import db from "../../utils/database";
     
     2. Server performs these steps:
        a) Retrieves an Access Token using the Site ID
-          - This Access Token proves the site the request is coming from is authorized to access Webflow's API
+          - This Access Token proves that the site the request is coming from is authorized to access Webflow's API
        
        b) Verifies the User's ID Token with Webflow
           - Sends the ID token to Webflow's API, making an authenticated request with the retrieved Access Token
@@ -67,6 +67,7 @@ export async function POST(request: NextRequest) {
 
     // Get the user information from the response
     const user = await response.json();
+    console.log("User:", user);
 
     // Generate a Session Token
     const tokenPayload = await jwt.createSessionToken(user);

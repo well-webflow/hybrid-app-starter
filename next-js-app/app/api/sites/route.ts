@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { WebflowClient } from "webflow-api";
-import jwt from "../../utils/jwt";
+import jwt from "../../lib/utils/jwt";
 
 /*
     Sites API Route

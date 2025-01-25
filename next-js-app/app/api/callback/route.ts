@@ -1,6 +1,6 @@
 import { WebflowClient } from "webflow-api";
 import { NextRequest, NextResponse } from "next/server";
-import db from "../../utils/database";
+import db from "../../lib/utils/database";
 
 /**
  * Callback API Route Handler

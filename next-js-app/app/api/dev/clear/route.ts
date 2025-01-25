@@ -1,6 +1,6 @@
 import chalk from "chalk";
 import { NextResponse } from "next/server";
-import database from "../../../utils/database";
+import database from "../../../lib/utils/database";
 
 /*
     Clear Database API Route

@@ -17,6 +17,11 @@ export function DevTools({ logout, setHasClickedFetch }: DevToolsProps) {
     window.location.reload(); // Force a complete refresh after clearing
   };
 
+  const handleLogout = () => {
+    logout();
+    window.location.reload(); // Refresh to show login screen
+  };
+
   return (
     <Paper
       sx={{
@@ -27,6 +32,8 @@ export function DevTools({ logout, setHasClickedFetch }: DevToolsProps) {
         padding: 2,
         backgroundColor: "#f5f5f5",
         borderTop: "1px solid #ddd",
+        zIndex: 1000,
+        maxHeight: "80px",
       }}
     >
       <Typography variant="h6" gutterBottom>
@@ -34,6 +41,10 @@ export function DevTools({ logout, setHasClickedFetch }: DevToolsProps) {
       </Typography>
 
       <Box sx={{ display: "flex", gap: 2 }}>
+        <Button variant="outlined" color="primary" onClick={handleLogout}>
+          Logout
+        </Button>
+
         <Button variant="outlined" color="error" onClick={handleClearClick}>
           Clear Session
         </Button>

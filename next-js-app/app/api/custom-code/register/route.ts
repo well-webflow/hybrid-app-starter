@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { WebflowClient } from "webflow-api";
-import { ScriptController } from "../../../controllers/scriptControllers";
-import jwt from "../../../utils/jwt";
+import { ScriptController } from "../../../lib/controllers/scriptControllers";
+import jwt from "../../../lib/utils/jwt";
 
 // Get Registered Scripts
 export async function GET(request: NextRequest) {
@@ -47,7 +47,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Get Request Body
-    const { siteId, scriptType, ...scriptData } = await request.json();
+    const { siteId, isHosted, scriptData } = await request.json();
+    const scriptType = isHosted ? "hosted" : "inline";
 
     // Create Webflow Client
     const webflow = new WebflowClient({ accessToken });

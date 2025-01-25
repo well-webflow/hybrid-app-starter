@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { WebflowClient } from "webflow-api";
-import { ScriptController } from "../../../controllers/scriptControllers";
-import jwt from "../../../utils/jwt";
+import { ScriptController } from "../../../lib/controllers/scriptControllers";
+import jwt from "../../../lib/utils/jwt";
 
 // Apply Custom Code
 export async function POST(request: NextRequest) {
+  console.log(request, "request");
   try {
     const accessToken = await jwt.verifyAuth(request);
     if (!accessToken) {
@@ -32,7 +33,7 @@ export async function POST(request: NextRequest) {
 
     if (targetType === "site") {
       // Upsert Custom Code to Site
-      result = await scriptController.upsertCustomCode(
+      result = await scriptController.upsertSiteCustomCode(
         targetId,
         scriptId,
         location,
@@ -40,7 +41,7 @@ export async function POST(request: NextRequest) {
       );
     } else if (targetType === "page") {
       // Upsert Custom Code to Page
-      result = await scriptController.upsertCustomCode(
+      result = await scriptController.upsertPageCustomCode(
         targetId,
         scriptId,
         location,
