@@ -1,7 +1,7 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useMemo } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { jwtDecode } from "jwt-decode";
-import { User, TokenResponse, DecodedToken } from "../types/types.ts";
+import { User, DecodedToken } from "../types/types.ts";
 
 /**
  * Custom hook for managing authentication state and token exchange.
@@ -28,137 +28,221 @@ import { User, TokenResponse, DecodedToken } from "../types/types.ts";
  * - logout: Clear authentication state
  */
 export function useAuth() {
-  // State variables
-  const [sessionToken, setSessionToken] = useState("");
-  const [user, setUser] = useState<User>({ firstName: "", email: "" });
+  // Use useRef to track initialization logging
+  const hasLogged = useRef(false);
+  if (!hasLogged.current) {
+    console.log("useAuth hook initializing (first time only)");
+    hasLogged.current = true;
+  }
+
+  const [sessionToken, setSessionToken] = useState(() => {
+    const storedUser = localStorage.getItem("wf_hybrid_user");
+    if (storedUser) {
+      try {
+        const userData = JSON.parse(storedUser);
+        return userData.sessionToken || "";
+      } catch (error) {
+        console.error("Error parsing stored session token:", error);
+        return "";
+      }
+    }
+    return "";
+  });
+
+  // State for the authentication loading state
+  const [isAuthLoading, setIsAuthLoading] = useState(() => {
+    // Get the stored user and the explicitly logged out flag
+    const storedUser = localStorage.getItem("wf_hybrid_user");
+    const wasExplicitlyLoggedOut = localStorage.getItem(
+      "explicitly_logged_out"
+    );
+
+    // Return true if there is a stored user and the user was not explicitly logged out
+    return !!(storedUser && !wasExplicitlyLoggedOut);
+  });
+
+  // State for the user
+  const [user, setUser] = useState<User>(() => {
+    const storedUser = localStorage.getItem("wf_hybrid_user");
+    if (storedUser) {
+      try {
+        const userData = JSON.parse(storedUser);
+        if (userData.sessionToken) {
+          // Decode the token to get user information
+          const decodedToken = jwtDecode(userData.sessionToken) as DecodedToken;
+          return {
+            firstName: decodedToken.user.firstName || "",
+            email: decodedToken.user.email || "",
+          };
+        }
+      } catch (error) {
+        console.error("Error parsing stored user data:", error);
+      }
+    }
+    return { firstName: "", email: "" };
+  });
+
   const base_url = import.meta.env.VITE_NEXTJS_API_URL;
 
-  // Token processing utilities
-  const handleDecodedToken = (
-    sessionToken: string,
-    decodedToken: DecodedToken
-  ) => {
-    const userData = {
-      sessionToken,
-      firstName: decodedToken.user.firstName,
-      email: decodedToken.user.email,
-      exp: decodedToken.exp,
-    };
+  // Memoize functions to prevent unnecessary recreations
+  const handleDecodedToken = useCallback(
+    (sessionToken: string, decodedToken: DecodedToken) => {
+      const userData = {
+        sessionToken,
+        firstName: decodedToken.user.firstName,
+        email: decodedToken.user.email,
+        exp: decodedToken.exp,
+      };
 
-    // Persist to local storage
-    localStorage.setItem("wf_hybrid_user", JSON.stringify(userData));
+      localStorage.setItem("wf_hybrid_user", JSON.stringify(userData));
+      setSessionToken(sessionToken);
+      setUser({
+        firstName: decodedToken.user.firstName,
+        email: decodedToken.user.email,
+      });
+    },
+    []
+  );
 
-    // Update application state
-    setSessionToken(sessionToken);
-    setUser({
-      firstName: decodedToken.user.firstName,
-      email: decodedToken.user.email,
-    });
-  };
-
-  // Core token exchange logic
   const tokenMutation = useMutation({
     mutationFn: async (idToken: string) => {
-      // Get site info using Designer API
+      console.log(
+        "Starting token exchange with idToken:",
+        idToken.substring(0, 20) + "..."
+      ); // Log partial token for debugging
       const siteInfo = await webflow.getSiteInfo();
+      console.log("Site info:", siteInfo); // Log site info
 
-      /*
-       * Resolve ID Token using Webflow's Data API and backend server logic.
-       *
-       * On our server, this endpoint will:
-       * 1. Retrieve an Authorization Token by matching Site ID with an existing
-       *    (Site ID + Authorization Token) pair, which was created when the Data Client
-       *    was authorized for the Site.
-       * 2. Resolve the ID Token by sending a request to Webflow's Data API, using
-       *    the retrieved Authorization Token
-       * 3. Get the User ID from the resolved ID Token, and store it in the database
-       *    as a (User ID + Access Token) pair.
-       * 4. Mint a session token using the User details
-       * 5. Return a session token to the client
-       */
       const response = await fetch(`${base_url}/api/token`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        // Send ID Token and Site ID to Webflow's Data API
         body: JSON.stringify({
           idToken,
           siteId: siteInfo.siteId,
         }),
       });
 
-      // Receive a Session Token from the server
-      return response.json() as Promise<TokenResponse>;
-    },
-    onSuccess: (data) => {
-      // Decode token and extract values
-      const decodedToken = jwtDecode(data.sessionToken) as DecodedToken;
+      if (!response.ok) {
+        // Log more details about the failed response
+        const errorData = await response.json();
+        console.error("Token exchange failed:", {
+          status: response.status,
+          statusText: response.statusText,
+          errorData,
+        });
+        throw new Error(
+          `Failed to exchange token: ${JSON.stringify(errorData)}`
+        );
+      }
 
-      // Process the decoded token and update state
-      handleDecodedToken(data.sessionToken, decodedToken);
+      const data = await response.json();
+      console.log("Token exchange successful:", !!data.sessionToken); // Log success
+      if (!data.sessionToken) {
+        throw new Error("No session token received");
+      }
 
-      console.log(`Session Token: ${data.sessionToken}`);
+      return data;
     },
-
-    onError: (error) => {
-      console.error("Error exchanging ID token:", error);
-    },
+    onSuccess: useCallback(
+      (data: { sessionToken: string }) => {
+        try {
+          const decodedToken = jwtDecode(data.sessionToken) as DecodedToken;
+          handleDecodedToken(data.sessionToken, decodedToken);
+        } catch (error) {
+          console.error("Error decoding token:", error);
+        }
+        setIsAuthLoading(false);
+      },
+      [handleDecodedToken]
+    ),
+    onError: useCallback((error: Error) => {
+      console.error("Detailed token exchange error:", error);
+      setIsAuthLoading(false);
+    }, []),
   });
 
-  // Public authentication methods
-  const exchangeAndVerifyIdToken = async () => {
+  const exchangeAndVerifyIdToken = useCallback(async () => {
+    console.log("exchangeAndVerifyIdToken called");
     try {
-      // Exchange ID token for Session Token
+      await new Promise((resolve) => setTimeout(resolve, 1000));
       const idToken = await webflow.getIdToken();
-      tokenMutation.mutate(idToken);
-    } catch (error) {
-      console.error("Error fetching ID Token:", error);
-    }
-  };
 
-  // Session management
-  const checkAndGetToken = async () => {
-    // Check local storage for user
-    const storedUser = localStorage.getItem("wf_hybrid_user");
-
-    // If user exists, check if token is expired
-    if (storedUser) {
-      const userData = JSON.parse(storedUser);
-      // Check if token is expired (exp is in seconds, Date.now() is in milliseconds)
-      if (userData.exp * 1000 > Date.now()) {
-        setUser({
-          firstName: userData.firstName,
-          email: userData.email,
-        });
-        setSessionToken(userData.sessionToken);
-        return;
+      if (!idToken || typeof idToken !== "string" || !idToken.trim()) {
+        throw new Error("Invalid or missing ID token");
       }
+
+      await tokenMutation.mutateAsync(idToken);
+    } catch (error) {
+      console.error("Detailed error in token exchange:", error);
+      setIsAuthLoading(false);
     }
+  }, [tokenMutation]);
 
-    // If no stored user or token is expired, get a new one
-    await exchangeAndVerifyIdToken();
-  };
+  const checkAndGetToken = useCallback(async () => {
+    console.log("checkAndGetToken called");
+    setIsAuthLoading(true);
+    try {
+      const storedUser = localStorage.getItem("wf_hybrid_user");
+      const wasExplicitlyLoggedOut = localStorage.getItem(
+        "explicitly_logged_out"
+      );
 
-  // 6. Logout
-  const logout = useCallback(async () => {
-    // Add a flag to prevent auto re-auth
+      if (storedUser && !wasExplicitlyLoggedOut) {
+        const userData = JSON.parse(storedUser);
+        if (userData.sessionToken) {
+          try {
+            const decodedToken = jwtDecode(
+              userData.sessionToken
+            ) as DecodedToken;
+            if (decodedToken.exp * 1000 > Date.now()) {
+              setUser({
+                firstName: decodedToken.user.firstName,
+                email: decodedToken.user.email,
+              });
+              setSessionToken(userData.sessionToken);
+              setIsAuthLoading(false);
+              return;
+            }
+          } catch (error) {
+            console.error("Error decoding stored token:", error);
+          }
+        }
+      }
+
+      await exchangeAndVerifyIdToken();
+    } catch (error) {
+      console.error("Error checking token:", error);
+      setSessionToken("");
+      setIsAuthLoading(false);
+    }
+  }, [exchangeAndVerifyIdToken]);
+
+  const logout = useCallback(() => {
     localStorage.setItem("explicitly_logged_out", "true");
-
-    // Clear auth-related storage
     localStorage.removeItem("wf_hybrid_user");
-
-    // Reset user state
     setUser({ firstName: "", email: "" });
     setSessionToken("");
   }, []);
 
-  // 5. Return public interface
-  return {
-    user,
-    sessionToken,
-    checkAndGetToken,
-    exchangeAndVerifyIdToken,
-    logout,
-  };
+  // Return memoized values
+  return useMemo(
+    () => ({
+      user,
+      sessionToken,
+      isAuthLoading,
+      checkAndGetToken,
+      exchangeAndVerifyIdToken,
+      logout,
+    }),
+    [
+      user,
+      sessionToken,
+      isAuthLoading,
+      checkAndGetToken,
+      exchangeAndVerifyIdToken,
+      logout,
+    ]
+  );
 }

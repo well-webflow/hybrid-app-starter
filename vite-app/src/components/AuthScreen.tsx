@@ -24,6 +24,7 @@ export function AuthScreen({ onAuth }: { onAuth: () => void }) {
 
   // Function to open the authorization popup authorization window
   const openAuthScreen = () => {
+    console.log("Opening auth window..."); // Debug
     const authWindow = window.open(
       `${base_url}/api/authorize`,
       "_blank",
@@ -33,12 +34,16 @@ export function AuthScreen({ onAuth }: { onAuth: () => void }) {
     // Check if the authorization window is closed
     const checkWindow = setInterval(() => {
       if (authWindow?.closed) {
+        console.log("Auth window closed, checking token..."); // Debug
         // When the auth popup closes:
         // 1. Stop checking for window status (clear interval)
         // 2. Verify if authentication was successful by checking for a new token
         // 3. If successful, trigger the onAuth callback to update parent components
         clearInterval(checkWindow);
-        auth.checkAndGetToken().then(() => onAuth());
+        auth.checkAndGetToken().then(() => {
+          console.log("Token check complete"); // Debug
+          onAuth();
+        });
       }
     }, 1000);
   };

@@ -8,12 +8,16 @@
 
 - [x] create a Nextjs app
 - [x] api route
+- [x] Custom Code Routes
 
 ---
 
 - [x] set up CORS
 - [-] ngrok ?
 - [x] setup the designer refresh when we save an api route
+- [ ] Custom Code Implementation
+- [ ] Navigation
+- [ ] Element Edit
 
 3. Setup the vite app - designer extension
 

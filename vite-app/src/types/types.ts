@@ -68,6 +68,23 @@ export interface DecodedToken {
   iss?: string;
 }
 
+// Custom Code Types
+export interface CustomCode {
+  id: string;
+  displayName: string;
+  hostedLocation: string;
+  code: string;
+  version: string;
+}
+
+export interface CodeApplication {
+  codeId: string;
+  targetType: "site" | "page";
+  targetId: string;
+  appliedAt: string;
+  version: string;
+}
+
 // Environment Variables Type
 export interface ImportMetaEnv {
   VITE_NEXTJS_API_URL: string;

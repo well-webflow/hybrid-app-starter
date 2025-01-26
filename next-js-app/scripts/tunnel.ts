@@ -1,4 +1,4 @@
-import { setupDevEnvironment } from "../app/utils/ngrokManager";
+import { setupDevEnvironment } from "../app/lib/utils/ngrokManager";
 
 async function setupTunnel() {
   try {
