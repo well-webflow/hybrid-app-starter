@@ -1,7 +1,7 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useMemo } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { jwtDecode } from "jwt-decode";
-import { User, TokenResponse, DecodedToken } from "../types/types.ts";
+import { User, DecodedToken } from "../types/types.ts";
 
 /**
  * Custom hook for managing authentication state and token exchange.
@@ -28,17 +28,18 @@ import { User, TokenResponse, DecodedToken } from "../types/types.ts";
  * - logout: Clear authentication state
  */
 export function useAuth() {
-  console.log("useAuth hook initializing");
+  // Use useRef to track initialization logging
+  const hasLogged = useRef(false);
+  if (!hasLogged.current) {
+    console.log("useAuth hook initializing (first time only)");
+    hasLogged.current = true;
+  }
 
   const [sessionToken, setSessionToken] = useState(() => {
-    console.log("Initializing sessionToken state");
     const storedUser = localStorage.getItem("wf_hybrid_user");
-    console.log("Stored user data:", storedUser);
-
     if (storedUser) {
       try {
         const userData = JSON.parse(storedUser);
-        console.log("Parsed userData:", userData);
         return userData.sessionToken || "";
       } catch (error) {
         console.error("Error parsing stored session token:", error);
@@ -83,6 +84,26 @@ export function useAuth() {
 
   const base_url = import.meta.env.VITE_NEXTJS_API_URL;
 
+  // Memoize functions to prevent unnecessary recreations
+  const handleDecodedToken = useCallback(
+    (sessionToken: string, decodedToken: DecodedToken) => {
+      const userData = {
+        sessionToken,
+        firstName: decodedToken.user.firstName,
+        email: decodedToken.user.email,
+        exp: decodedToken.exp,
+      };
+
+      localStorage.setItem("wf_hybrid_user", JSON.stringify(userData));
+      setSessionToken(sessionToken);
+      setUser({
+        firstName: decodedToken.user.firstName,
+        email: decodedToken.user.email,
+      });
+    },
+    []
+  );
+
   const tokenMutation = useMutation({
     mutationFn: async (idToken: string) => {
       console.log(
@@ -124,57 +145,32 @@ export function useAuth() {
 
       return data;
     },
-    onSuccess: (data) => {
-      try {
-        const decodedToken = jwtDecode(data.sessionToken) as DecodedToken;
-        handleDecodedToken(data.sessionToken, decodedToken);
-      } catch (error) {
-        console.error("Error decoding token:", error);
-      }
-      setIsAuthLoading(false);
-    },
-    onError: (error) => {
+    onSuccess: useCallback(
+      (data: { sessionToken: string }) => {
+        try {
+          const decodedToken = jwtDecode(data.sessionToken) as DecodedToken;
+          handleDecodedToken(data.sessionToken, decodedToken);
+        } catch (error) {
+          console.error("Error decoding token:", error);
+        }
+        setIsAuthLoading(false);
+      },
+      [handleDecodedToken]
+    ),
+    onError: useCallback((error: Error) => {
       console.error("Detailed token exchange error:", error);
       setIsAuthLoading(false);
-    },
+    }, []),
   });
 
-  const handleDecodedToken = (
-    sessionToken: string,
-    decodedToken: DecodedToken
-  ) => {
-    const userData = {
-      sessionToken,
-      firstName: decodedToken.user.firstName,
-      email: decodedToken.user.email,
-      exp: decodedToken.exp,
-    };
-
-    localStorage.setItem("wf_hybrid_user", JSON.stringify(userData));
-    setSessionToken(sessionToken);
-    setUser({
-      firstName: decodedToken.user.firstName,
-      email: decodedToken.user.email,
-    });
-  };
-
-  const exchangeAndVerifyIdToken = async () => {
+  const exchangeAndVerifyIdToken = useCallback(async () => {
     console.log("exchangeAndVerifyIdToken called");
     try {
-      // Add delay to ensure Webflow is ready
       await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      console.log("Requesting ID token from Webflow...");
       const idToken = await webflow.getIdToken();
-      console.log("Got ID token from Webflow:", !!idToken, typeof idToken);
 
-      if (!idToken) {
-        throw new Error("No ID token received from Webflow");
-      }
-
-      // Verify the token is a non-empty string
-      if (typeof idToken !== "string" || !idToken.trim()) {
-        throw new Error("Invalid ID token format");
+      if (!idToken || typeof idToken !== "string" || !idToken.trim()) {
+        throw new Error("Invalid or missing ID token");
       }
 
       await tokenMutation.mutateAsync(idToken);
@@ -182,14 +178,13 @@ export function useAuth() {
       console.error("Detailed error in token exchange:", error);
       setIsAuthLoading(false);
     }
-  };
+  }, [tokenMutation]);
 
-  const checkAndGetToken = async () => {
+  const checkAndGetToken = useCallback(async () => {
     console.log("checkAndGetToken called");
     setIsAuthLoading(true);
     try {
       const storedUser = localStorage.getItem("wf_hybrid_user");
-      console.log("checkAndGetToken - stored user:", storedUser);
       const wasExplicitlyLoggedOut = localStorage.getItem(
         "explicitly_logged_out"
       );
@@ -201,7 +196,6 @@ export function useAuth() {
             const decodedToken = jwtDecode(
               userData.sessionToken
             ) as DecodedToken;
-            console.log("Decoded token:", decodedToken);
             if (decodedToken.exp * 1000 > Date.now()) {
               setUser({
                 firstName: decodedToken.user.firstName,
@@ -223,7 +217,7 @@ export function useAuth() {
       setSessionToken("");
       setIsAuthLoading(false);
     }
-  };
+  }, [exchangeAndVerifyIdToken]);
 
   const logout = useCallback(() => {
     localStorage.setItem("explicitly_logged_out", "true");
@@ -232,12 +226,23 @@ export function useAuth() {
     setSessionToken("");
   }, []);
 
-  return {
-    user,
-    sessionToken,
-    isAuthLoading,
-    checkAndGetToken,
-    exchangeAndVerifyIdToken,
-    logout,
-  };
+  // Return memoized values
+  return useMemo(
+    () => ({
+      user,
+      sessionToken,
+      isAuthLoading,
+      checkAndGetToken,
+      exchangeAndVerifyIdToken,
+      logout,
+    }),
+    [
+      user,
+      sessionToken,
+      isAuthLoading,
+      checkAndGetToken,
+      exchangeAndVerifyIdToken,
+      logout,
+    ]
+  );
 }

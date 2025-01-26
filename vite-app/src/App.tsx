@@ -37,37 +37,23 @@ function AppContent() {
     hasClickedFetch
   );
 
-  // Ref to check if the token has been checked
+  // Move ref outside useEffect to persist across renders
   const hasCheckedToken = useRef(false);
 
   useEffect(() => {
     // Set the extension size to large
     webflow.setExtensionSize("large");
 
-    // Handle the authentication flow
-    const handleAuthFlow = async () => {
-      console.log("Starting auth flow check"); // Debug
+    // Only run auth flow if not already checked
+    if (!hasCheckedToken.current) {
       const storedUser = localStorage.getItem("wf_hybrid_user");
       const wasExplicitlyLoggedOut = localStorage.getItem(
         "explicitly_logged_out"
       );
 
-      // Debugging logs
-      console.log("Auth flow - stored user:", !!storedUser); // Debug
-      console.log("Auth flow - was logged out:", wasExplicitlyLoggedOut); // Debug
-
-      // If there is a stored user and the user was not explicitly logged out, check and get the token
       if (storedUser && !wasExplicitlyLoggedOut) {
-        await checkAndGetToken();
-      } else {
-        // If there is no stored user or the user was explicitly logged out, set the token check to true
-        hasCheckedToken.current = true;
+        checkAndGetToken();
       }
-    };
-
-    // If the token has not been checked, handle the auth flow
-    if (!hasCheckedToken.current) {
-      handleAuthFlow();
       hasCheckedToken.current = true;
     }
 
@@ -75,7 +61,7 @@ function AppContent() {
     const handleAuthComplete = async (event: MessageEvent) => {
       if (event.data === "authComplete") {
         localStorage.removeItem("explicitly_logged_out");
-        hasCheckedToken.current = false;
+        // Don't reset hasCheckedToken here, as we don't need to recheck
         await checkAndGetToken();
       }
     };
@@ -106,7 +92,7 @@ function AppContent() {
                   sites={sites}
                   isLoading={isLoading}
                   isError={isError}
-                  error={error}
+                  error={error?.message || ""}
                   onFetchSites={handleFetchSites}
                 />
               ) : (

@@ -7,6 +7,15 @@ import {
   CustomCodeInlineRequest,
 } from "webflow-api/api/resources/scripts";
 
+interface WebflowError {
+  statusCode?: number;
+  message?: string;
+}
+
+function isWebflowError(error: unknown): error is WebflowError {
+  return typeof error === "object" && error !== null && "statusCode" in error;
+}
+
 export class ScriptController {
   private webflow: WebflowClient;
   private cache: CacheService;
@@ -93,7 +102,28 @@ export class ScriptController {
   ) {
     try {
       let existingScripts = await this.getExistingScripts("site", siteId);
+      console.log(
+        "[DEBUG] upsertSiteCustomCode existing scripts:",
+        existingScripts
+      );
+
+      // Remove any existing entries for this script ID to avoid duplicates
+      existingScripts = existingScripts.filter(
+        (script: { id: string }) => script.id !== scriptId
+      );
+      console.log(
+        "[DEBUG] upsertSiteCustomCode after filter:",
+        existingScripts
+      );
+
+      // Add the new script configuration
       existingScripts.push({ id: scriptId, location, version });
+      console.log(
+        "[DEBUG] upsertSiteCustomCode final scripts array:",
+        existingScripts
+      );
+
+      // Ensure we're sending the correct structure
       return await this.webflow.sites.scripts.upsertCustomCode(siteId, {
         scripts: existingScripts,
       });
@@ -125,8 +155,8 @@ export class ScriptController {
       const result = response.scripts || [];
       this.cache.set(cacheKey, result);
       return result;
-    } catch (error: any) {
-      if (error?.statusCode !== 404) throw error;
+    } catch (error: unknown) {
+      if (isWebflowError(error) && error.statusCode !== 404) throw error;
       return [];
     }
   }
@@ -159,8 +189,8 @@ export class ScriptController {
             // Cache the result
             this.cache.set(`page_${pageId}`, pageScripts);
             return pageScripts;
-          } catch (error: any) {
-            if (error?.statusCode !== 404) throw error;
+          } catch (error: unknown) {
+            if (isWebflowError(error) && error.statusCode !== 404) throw error;
             return [];
           }
         }
@@ -183,6 +213,11 @@ export class ScriptController {
   ) {
     try {
       let existingScripts = await this.getExistingScripts("page", pageId);
+      // Remove any existing entries for this script ID to avoid duplicates
+      existingScripts = existingScripts.filter(
+        (script: { id: string }) => script.id !== scriptId
+      );
+      // Add the new script configuration
       existingScripts.push({ id: scriptId, location, version });
       return await this.webflow.pages.scripts.upsertCustomCode(pageId, {
         scripts: existingScripts,
@@ -217,9 +252,20 @@ export class ScriptController {
       const getter =
         type === "site" ? this.getSiteCustomCode : this.getPageCustomCode;
       const response = await getter.call(this, id);
-      return response.scripts || [];
-    } catch (error: any) {
-      if (error?.statusCode !== 404) throw error;
+      console.log(
+        `[DEBUG] getExistingScripts raw response for ${type}:`,
+        response
+      );
+
+      const scripts = type === "site" ? response.scripts || [] : response || [];
+      console.log(
+        `[DEBUG] getExistingScripts processed scripts for ${type}:`,
+        scripts
+      );
+      return scripts;
+    } catch (error: unknown) {
+      console.error(`[DEBUG] getExistingScripts error for ${type}:`, error);
+      if (isWebflowError(error) && error.statusCode !== 404) throw error;
       return [];
     }
   }

@@ -1,12 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from "react";
-import {
-  Box,
-  Tab,
-  Tabs,
-  Paper,
-  CircularProgress,
-  Typography,
-} from "@mui/material";
+import { Box, Tab, Tabs, Paper } from "@mui/material";
 import {
   useScriptRegistration,
   useScriptSelection,
@@ -14,7 +7,7 @@ import {
 } from "../../hooks/useCustomCode";
 import { ScriptRegistration, ScriptsList, SiteTab, PagesTab } from "./";
 import { useAuth } from "../../hooks/useAuth";
-import { customCodeApi } from "../../services/customCode/api";
+import { CustomCode } from "../../types/types";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -55,18 +48,16 @@ export function CustomCodeDashboard() {
   );
 
   const { registerScript, isRegistering } = useScriptRegistration(
-    sessionToken,
-    currentSite?.id
+    sessionToken || "",
+    currentSite?.id || ""
   );
-
-  const { getPages } = customCodeApi;
 
   useEffect(() => {
     async function getSiteInfo() {
       try {
         const siteInfo = await webflow.getSiteInfo();
         console.log("Got site info:", siteInfo);
-        setCurrentSite({ id: siteInfo.siteId, name: siteInfo.name });
+        setCurrentSite({ id: siteInfo.siteId, name: siteInfo.siteName });
       } catch (error) {
         console.error("Error getting site info:", error);
       }
@@ -96,12 +87,21 @@ export function CustomCodeDashboard() {
     }
 
     initializeData();
-  }, [currentSite?.id, sessionToken, mainTab, selectedScript?.id]);
+  }, [
+    currentSite?.id,
+    sessionToken,
+    mainTab,
+    selectedScript,
+    fetchScripts,
+    registerScript,
+    applyScript,
+    fetchStatus,
+  ]);
 
   const handleRegisterCode = async (code: string, isHosted: boolean) => {
     try {
       await registerScript(code, isHosted);
-      await fetchScripts(currentSite.id, sessionToken);
+      await fetchScripts(currentSite?.id || "", sessionToken || "");
     } catch (error) {
       console.error("Error registering code:", error);
       // Handle error (show notification, etc.)
@@ -174,7 +174,9 @@ export function CustomCodeDashboard() {
             <TabPanel value={applicationTab} index={1}>
               <PagesTab
                 selectedScript={selectedScript}
-                onApplyCode={applyScript}
+                onApplyCode={(targetType, pageIds, location) =>
+                  applyScript(targetType, pageIds, location, sessionToken || "")
+                }
               />
             </TabPanel>
           </Paper>
