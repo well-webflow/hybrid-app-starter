@@ -26,7 +26,7 @@ export function AuthScreen({ onAuth }: { onAuth: () => void }) {
   const openAuthScreen = () => {
     console.log("Opening auth window..."); // Debug
     const authWindow = window.open(
-      `${base_url}/api/authorize`,
+      `${base_url}/api/auth/authorize`,
       "_blank",
       "width=600,height=600"
     );

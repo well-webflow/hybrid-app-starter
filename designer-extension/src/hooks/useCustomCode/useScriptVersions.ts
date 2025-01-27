@@ -1,6 +1,4 @@
 import { useState, useCallback } from "react";
-import { customCodeApi } from "../../services/customCode";
-import { CustomCode } from "../../types/types";
 
 export function useScriptVersions(sessionToken: string) {
   const [versions, setVersions] = useState<Record<string, string[]>>({});

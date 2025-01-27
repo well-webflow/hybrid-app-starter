@@ -113,7 +113,7 @@ export function useAuth() {
       const siteInfo = await webflow.getSiteInfo();
       console.log("Site info:", siteInfo); // Log site info
 
-      const response = await fetch(`${base_url}/api/token`, {
+      const response = await fetch(`${base_url}/api/auth/token`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

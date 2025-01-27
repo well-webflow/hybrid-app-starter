@@ -9,12 +9,22 @@ import { ScriptRegistration, ScriptsList, SiteTab, PagesTab } from "./";
 import { useAuth } from "../../hooks/useAuth";
 import { CustomCode } from "../../types/types";
 
+/**
+ * Props interface for the TabPanel component
+ * @property {React.ReactNode} children - Content to be displayed in the tab panel
+ * @property {number} index - Index of the tab panel
+ * @property {number} value - Currently selected tab value
+ */
 interface TabPanelProps {
   children?: React.ReactNode;
   index: number;
   value: number;
 }
 
+/**
+ * TabPanel component for managing content visibility based on selected tab
+ * @param props - TabPanel properties
+ */
 function TabPanel(props: TabPanelProps) {
   const { children, value, index, ...other } = props;
   return (
@@ -24,17 +34,41 @@ function TabPanel(props: TabPanelProps) {
   );
 }
 
+/**
+ * CustomCodeDashboard is the main component for managing custom code scripts in a Webflow site.
+ * It provides functionality to:
+ * - Register new scripts (hosted or inline)
+ * - View and select from existing scripts
+ * - Apply scripts to either the entire site or specific pages
+ * - Manage script locations (header/footer)
+ *
+ * The dashboard is organized into two main sections:
+ * 1. Register Script: For adding new custom code
+ * 2. Manage Scripts: For applying and managing existing scripts
+ *
+ * @example
+ * ```tsx
+ * // Basic usage in a React application
+ * function App() {
+ *   return (
+ *     <CustomCodeDashboard />
+ *   );
+ * }
+ * ```
+ */
 export function CustomCodeDashboard() {
   const { sessionToken } = useAuth();
   const hasInitialized = useRef(false);
+  // Track current site information
   const [currentSite, setCurrentSite] = useState<{
     id: string;
     name: string;
   } | null>(null);
+  // Navigation state
   const [mainTab, setMainTab] = useState<"register" | "manage">("register");
   const [applicationTab, setApplicationTab] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
 
+  // Hook integrations for script management
   const {
     selectedScript,
     registeredScripts,
@@ -52,6 +86,10 @@ export function CustomCodeDashboard() {
     currentSite?.id || ""
   );
 
+  /**
+   * Initialize site information on component mount
+   * Fetches site ID and name from Webflow API
+   */
   useEffect(() => {
     async function getSiteInfo() {
       try {
@@ -65,11 +103,15 @@ export function CustomCodeDashboard() {
     getSiteInfo();
   }, []);
 
+  /**
+   * Handles data initialization and updates when dependencies change
+   * - Fetches registered scripts on first load
+   * - Updates script application status when managing scripts
+   */
   useEffect(() => {
     async function initializeData() {
       if (!currentSite?.id || !sessionToken) return;
 
-      setIsLoading(true);
       try {
         if (!hasInitialized.current) {
           await fetchScripts(currentSite.id, sessionToken);
@@ -81,8 +123,6 @@ export function CustomCodeDashboard() {
         }
       } catch (error) {
         console.error("Error initializing data:", error);
-      } finally {
-        setIsLoading(false);
       }
     }
 
@@ -98,6 +138,11 @@ export function CustomCodeDashboard() {
     fetchStatus,
   ]);
 
+  /**
+   * Handles the registration of new custom code
+   * @param code - The custom code to register
+   * @param isHosted - Whether the code is hosted externally
+   */
   const handleRegisterCode = async (code: string, isHosted: boolean) => {
     try {
       await registerScript(code, isHosted);
@@ -108,6 +153,11 @@ export function CustomCodeDashboard() {
     }
   };
 
+  /**
+   * Handles navigation between main dashboard tabs
+   * @param _event - React synthetic event
+   * @param newValue - New tab value to switch to
+   */
   const handleMainTabChange = (
     _event: React.SyntheticEvent,
     newValue: "register" | "manage"
@@ -115,6 +165,11 @@ export function CustomCodeDashboard() {
     setMainTab(newValue);
   };
 
+  /**
+   * Handles navigation between application tabs (Site/Pages)
+   * @param _event - React synthetic event
+   * @param newValue - New tab index to switch to
+   */
   const handleApplicationTabChange = (
     _event: React.SyntheticEvent,
     newValue: number
@@ -122,6 +177,10 @@ export function CustomCodeDashboard() {
     setApplicationTab(newValue);
   };
 
+  /**
+   * Updates the currently selected script
+   * @param script - The script to select for management
+   */
   const handleScriptSelect = useCallback(
     (script: CustomCode) => {
       selectScript(script);

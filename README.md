@@ -1,36 +1,39 @@
 # Hybrid App Starter
 
-A starter project for creating a Webflow Hybrid App that demonstrates OAuth authentication from the Webflow UI and basic Data and Deigner API interactions. This project provides a simple example of how to:
+A starter project for creating a Webflow Hybrid App that demonstrates OAuth authentication from the Webflow UI and basic Data and Designer API interactions. This project provides a simple example of how to:
 
 - Set up a Webflow Data Client server
-- Set up a Webflow Designer Extension
-- Implement OAuth 2.0 authentication
-- Make authenticated API calls from the Designer Extension
-- Da Client
+- Set up a Webflow Designer Extension frontend
+- Implement OAuth 2.0 authentication from the Webflow UI
 - Make Designer API calls in Webflow
-- Display site data in a clean interface
+  - Get Selected Element
+  - Get Styles
+  - Create a new DOM Element
+  - Set DOM Element Tag
+  - Set Custom Attributes
+- Make authenticated Data API calls from the Designer Extension including:
+  - List Sites
+  - Register and Apply Custom Code
 
-## 🚀 Quick Start
+## 🚀 Quick start
 
-1. Register your app in [Webflow's Developer Portal](https://developers.webflow.com/v2.0.0/data/docs/register-an-app)
+1. Register your app in [Webflow's Developer Portal](https://developers.webflow.com/v2.0.0/data/docs/register-an-app) Be sure to add a redirect URI to `localhost:3000/api/callback` and the required scopes:
+   - `sites:read`
+   - `sites:write`
+   - `custom_code:read`
+   - `custom_code:write`
 2. Clone this repository
-3. Install dependencies:
-
-   ```bash
-   npm install
-   # or
-   yarn install
-   ```
-
-4. Copy `.env.example` to `.env` and add your credentials:
+3. In the `/data-client` folder, copy `.env.example` to `.env` and add your credentials which you can find in the details of your app in the App Development section of the Integrations tab of your Webflow Dashboard:
 
    ```env
-   WEBFLOW_CLIENT_ID=your_client_id
-   WEBFLOW_SECRET=your_client_secret
+   WEBFLOW_CLIENT_ID=xxx
+   WEBFLOW_CLIENT_SECRET=xxx
+   DESIGNER_EXTENSION_URI=xxx
+   NGROK_AUTH_TOKEN=XXX - find this in the [ngrok dashboard](https://dashboard.ngrok.com/get-started/your-authtoken)
    PORT=3000
    ```
 
-5. Start the development server:
+4. Install dependencies and run the Data Client and Designer Extension togther as a Hybrid App:
 
    ```bash
    npm run dev
@@ -38,26 +41,17 @@ A starter project for creating a Webflow Hybrid App that demonstrates OAuth auth
    yarn dev
    ```
 
-## 🔒 Setting Up OAuth
-
-1. [Create a tunnel to your local server](https://developers.webflow.com/data/docs/getting-started-data-clients#sign-up-for-ngrok):
-   Webflow requires a public URL to redirect to after authentication. If you're running the server locally, you'll need to create a tunnel to your local server.
-
-   ```bash
-   ngrok http 3000
-   ```
-
-2. Copy the HTTPS URL from ngrok (e.g., `https://your-tunnel.ngrok.io`)
-3. In the Workspace Settings -> Apps & Integrations -> Your App:
-   - Set your OAuth Redirect URI to: `https://your-tunnel.ngrok.io/auth`
-   - Add required scopes (this example uses `sites:read`)
+5. Open your Webflow Site. Open the Apps panel and click on your App. When the panel opens click the "Launch Development App" button
 
 ## 🛠️ Tech Stack
 
-- **[Webflow SDK](https://github.com/webflow/js-webflow-api)** - Official Webflow API client
-- **[Fastify](https://www.fastify.io/)** - Fast and low overhead web framework
-- **[Level](https://github.com/Level/level)** - Lightweight key-value storage
-- **[Nodemon](https://nodemon.io/)** - Development auto-reload
+- Data Client:
+  - **[Webflow SDK](https://github.com/webflow/js-webflow-api)** - Official Webflow API client
+- Designer Extension:
+  - **[Webflow Designer API](https://www.npmjs.com/package/@webflow/designer-extension-typings?activeTab=readme)** - Official Webflow Designer API client
+  - **[Vite](https://vitejs.dev/)** - Build tool for modern web development
+  - **[JWT-Decode](https://github.com/auth0/jwt-decode)** - Decode JWT tokens
+  - **[React](https://reactjs.org/)** - JavaScript library for building user interfaces
 
 ## 📝 Important Notes
 
@@ -74,11 +68,21 @@ A starter project for creating a Webflow Hybrid App that demonstrates OAuth auth
 
 ```
 .
-├── app/
-│ ├── server.js # Main server file with OAuth and API endpoints
-│ └── static/ # Frontend assets
-│ ├── index.html # Main UI
-│ └── main.js # Frontend JavaScript
+├── data-client/
+│   ├── app/            # Data Client server
+│   │   ├── api/       # API Routes for interacting with the Data API
+│   │   └── db/        # Database for storing Site information and authorization tokens
+│   ├── .env.example   # Environment variables template
+│   └── package.json
+├── designer-extension/
+│ ├── src/ # Designer Extension frontend
+│ │   ├── /components # UI Components
+      / hooks
+         - useAuth
+         - useDevTools
+│ │   ├── app.tsx # Main UI
+│ ├── .env.development # Environment variables template
+│ └── package.json
 ├── .env.example # Environment variables template
 └── package.json
 ```

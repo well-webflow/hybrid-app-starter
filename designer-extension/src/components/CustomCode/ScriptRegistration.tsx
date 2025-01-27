@@ -9,18 +9,47 @@ import {
 } from "@mui/material";
 import CodeEditor from "@uiw/react-textarea-code-editor";
 
+/**
+ * Props interface for the ScriptRegistration component
+ * @property {Function} onRegister - Callback function to handle script registration
+ * @property {boolean} isRegistering - Loading state indicating if registration is in progress
+ */
 interface ScriptRegistrationProps {
   onRegister: (code: string, isHosted: boolean) => Promise<void>;
   isRegistering: boolean;
 }
 
+/**
+ * ScriptRegistration component provides an interface for registering new custom code scripts.
+ * It supports two types of script registration:
+ * 1. Inline JavaScript - Direct code input
+ * 2. Hosted Script - External JavaScript file URL
+ *
+ * Features:
+ * - Code editor with syntax highlighting
+ * - Toggle between inline and hosted script modes
+ * - Input validation and loading states
+ *
+ * @example
+ * ```tsx
+ * <ScriptRegistration
+ *   onRegister={(code, isHosted) => handleRegistration(code, isHosted)}
+ *   isRegistering={false}
+ * />
+ * ```
+ */
 export function ScriptRegistration({
   onRegister,
   isRegistering,
 }: ScriptRegistrationProps) {
+  // State for managing code input and script type
   const [codeInput, setCodeInput] = useState<string>("");
   const [isHosted, setIsHosted] = useState<boolean>(false);
 
+  /**
+   * Handles the submission of new script registration
+   * Validates input and calls the onRegister callback
+   */
   const handleSubmit = async () => {
     if (!codeInput.trim()) return;
     await onRegister(codeInput, isHosted);

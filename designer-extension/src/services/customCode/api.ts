@@ -1,28 +1,9 @@
 const base_url = import.meta.env.VITE_NEXTJS_API_URL;
-
-interface ScriptData {
-  sourceCode: string;
-  displayName: string;
-  version: string;
-}
-
-interface RegisterScriptParams {
-  siteId: string;
-  isHosted: boolean;
-  scriptData: ScriptData;
-}
-
-interface ApplyScriptParams {
-  scriptId: string;
-  targetType: "site" | "page";
-  targetId: string;
-  location: "header" | "footer";
-  version: string;
-}
+import { ScriptRegistrationRequest, CodeApplication } from "../../types/types";
 
 export const customCodeApi = {
   // Register a new script
-  registerScript: async (params: RegisterScriptParams, token: string) => {
+  registerScript: async (params: ScriptRegistrationRequest, token: string) => {
     const response = await fetch(`${base_url}/api/custom-code/register`, {
       method: "POST",
       headers: {
@@ -48,7 +29,7 @@ export const customCodeApi = {
   },
 
   // Apply script to site or page
-  applyScript: async (params: ApplyScriptParams, token: string) => {
+  applyScript: async (params: CodeApplication, token: string) => {
     const response = await fetch(`${base_url}/api/custom-code/apply`, {
       method: "POST",
       headers: {
