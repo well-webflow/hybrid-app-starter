@@ -31,7 +31,6 @@ export function useAuth() {
   // Use useRef to track initialization logging
   const hasLogged = useRef(false);
   if (!hasLogged.current) {
-    console.log("useAuth hook initializing (first time only)");
     hasLogged.current = true;
   }
 
@@ -106,10 +105,6 @@ export function useAuth() {
 
   const tokenMutation = useMutation({
     mutationFn: async (idToken: string) => {
-      console.log(
-        "Starting token exchange with idToken:",
-        idToken.substring(0, 20) + "..."
-      ); // Log partial token for debugging
       const siteInfo = await webflow.getSiteInfo();
       console.log("Site info:", siteInfo); // Log site info
 
@@ -138,7 +133,6 @@ export function useAuth() {
       }
 
       const data = await response.json();
-      console.log("Token exchange successful:", !!data.sessionToken); // Log success
       if (!data.sessionToken) {
         throw new Error("No session token received");
       }
@@ -164,7 +158,6 @@ export function useAuth() {
   });
 
   const exchangeAndVerifyIdToken = useCallback(async () => {
-    console.log("exchangeAndVerifyIdToken called");
     try {
       await new Promise((resolve) => setTimeout(resolve, 1000));
       const idToken = await webflow.getIdToken();
@@ -181,7 +174,6 @@ export function useAuth() {
   }, [tokenMutation]);
 
   const checkAndGetToken = useCallback(async () => {
-    console.log("checkAndGetToken called");
     setIsAuthLoading(true);
     try {
       const storedUser = localStorage.getItem("wf_hybrid_user");
