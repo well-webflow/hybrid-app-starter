@@ -73,23 +73,29 @@ export async function startNgrok(port: number): Promise<string> {
 export async function setupDevEnvironment(): Promise<string> {
   try {
     const PORT = parseInt(process.env.PORT || "3000");
-    const ngrokUrl = await startNgrok(PORT);
+    const localUrl = `http://localhost:${PORT}`;
+    const ngrokUrl = process.env.NGROK_AUTH_TOKEN
+      ? await startNgrok(PORT)
+      : null;
 
+    const baseUrl = ngrokUrl
+      ? `${ngrokUrl}/api/callback`
+      : `${localUrl}/api/callback`;
     const message = [
       chalk.bold("Development Environment"),
       "",
-      `${chalk.bold("Local URL:  ")}${chalk.cyan(`http://localhost:${PORT}`)}`,
-      `${chalk.bold("Ngrok URL:  ")}${chalk.cyan(ngrokUrl)}`,
-      `${chalk.bold("Callback:   ")}${chalk.cyan(`${ngrokUrl}/api/callback`)}`,
+      `${chalk.bold("Local URL:  ")}${chalk.cyan(localUrl)}`,
+      `${chalk.bold("Base URL:  ")}${chalk.cyan(baseUrl)}`,
+      `${chalk.bold("Callback:   ")}${chalk.cyan(`${baseUrl}/api/callback`)}`,
       "",
       `${chalk.yellow("⚠")} ${chalk.bold(
         "Update your Webflow callback URL to:"
       )}`,
-      chalk.cyan(`${ngrokUrl}/api/callback`),
+      chalk.cyan(`${baseUrl}/api/callback`),
     ].join("\n");
 
     console.log(drawBox(message));
-    return ngrokUrl;
+    return baseUrl;
   } catch (error) {
     console.error(
       chalk.red("Error setting up development environment:"),
