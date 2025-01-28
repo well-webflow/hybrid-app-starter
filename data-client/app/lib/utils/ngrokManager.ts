@@ -85,8 +85,7 @@ export async function setupDevEnvironment(): Promise<string> {
       chalk.bold("Development Environment"),
       "",
       `${chalk.bold("Local URL:  ")}${chalk.cyan(localUrl)}`,
-      `${chalk.bold("Base URL:  ")}${chalk.cyan(baseUrl)}`,
-      `${chalk.bold("Callback:   ")}${chalk.cyan(`${baseUrl}/api/callback`)}`,
+      `${chalk.bold("Callback:   ")}${chalk.cyan(`${baseUrl}`)}`,
       "",
       `${chalk.yellow("⚠")} ${chalk.bold(
         "Update your Webflow callback URL to:"
