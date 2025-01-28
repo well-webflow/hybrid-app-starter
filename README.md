@@ -2,38 +2,32 @@
 
 A starter project for creating a Webflow Hybrid App that demonstrates OAuth authentication from the Webflow UI and basic Data and Designer API interactions. This project provides a simple example of how to:
 
-- Set up a Webflow Data Client server
-- Set up a Webflow Designer Extension frontend
-- Implement OAuth 2.0 authentication from the Webflow UI
-- Make Designer API calls in Webflow
-  - Get Selected Element
-  - Get Styles
-  - Create a new DOM Element
-  - Set DOM Element Tag
-  - Set Custom Attributes
-- Make authenticated Data API calls from the Designer Extension including:
-  - List Sites
-  - Register and Apply Custom Code
+- [Set up a Webflow Data Client server](https://developers.webflow.com/v2.0.0/data/docs/getting-started-data-clients)
+- [Set up a Webflow Designer Extension frontend](https://developers.webflow.com/v2.0.0/designer/docs/getting-started-designer-extensions)
+- [Implement OAuth 2.0 authentication from the Webflow UI](https://developers.webflow.com/v2.0.0/data/docs/authenticating-users-with-id-tokens)
+- [Make Designer API calls in Webflow](https://developers.webflow.com/designer/reference/introduction)
+- [Make authenticated Data API calls from the Designer Extension](https://developers.webflow.com/data/reference/rest-introduction)
 
 ## 🚀 Quick start
 
-1. Register your app in [Webflow's Developer Portal](https://developers.webflow.com/v2.0.0/data/docs/register-an-app) Be sure to add a redirect URI to `localhost:3000/api/callback` and the required scopes:
-   - `sites:read`
-   - `sites:write`
-   - `custom_code:read`
-   - `custom_code:write`
-2. Clone this repository
-3. In the `/data-client` folder, copy `.env.example` to `.env` and add your credentials which you can find in the details of your app in the App Development section of the Integrations tab of your Webflow Dashboard:
+1. Create a Webflow site if you haven't already at [webflow.com](https://webflow.com)
+2. Register your app in [your Workspace](https://developers.webflow.com/v2.0.0/data/docs/register-an-app) Be sure to add a redirect URI to `localhost:3000/auth/api/callback` and the required scopes:
+
+   - `sites:read` `sites:write`
+   - `custom_code:read` `custom_code:write`
+
+3. Clone this repository
+
+4. Navigate to the `/data-client` folder and create a `.env` file by copying `.env.example`. Fill in your app credentials, which can be found in your Webflow Dashboard under Integrations > App Development > Your App Details:
 
    ```env
    WEBFLOW_CLIENT_ID=xxx
    WEBFLOW_CLIENT_SECRET=xxx
    DESIGNER_EXTENSION_URI=xxx
-   NGROK_AUTH_TOKEN=XXX - find this in the [ngrok dashboard](https://dashboard.ngrok.com/get-started/your-authtoken)
    PORT=3000
    ```
 
-4. Install dependencies and run the Data Client and Designer Extension togther as a Hybrid App:
+5. Run the Data Client and Designer Extension together as a Hybrid App. The run command will install the dependencies and start the server and the designer extension:
 
    ```bash
    npm run dev
@@ -41,7 +35,11 @@ A starter project for creating a Webflow Hybrid App that demonstrates OAuth auth
    yarn dev
    ```
 
-5. Open your Webflow Site. Open the Apps panel and click on your App. When the panel opens click the "Launch Development App" button
+6. Install your app by going to your Webflow Dashboard > Integrations tab and clicking the "Install" button next to your app
+
+7. Open your Webflow Site. Open the Apps panel and click on your App. When the panel opens click the "Launch Development App" button
+
+8. Click the Authorize button to authenticate your App and start using the Data and Designer APIs
 
 ## 🛠️ Tech Stack
 
@@ -68,29 +66,35 @@ A starter project for creating a Webflow Hybrid App that demonstrates OAuth auth
 
 ```
 .
-├── data-client/
-│   ├── app/            # Data Client server
-│   │   ├── api/       # API Routes for interacting with the Data API
-│   │   └── db/        # Database for storing Site information and authorization tokens
-│   ├── .env.example   # Environment variables template
+├── data-client/                      # Backend server
+│   ├── app/
+│   │   ├── api/                     # API Routes
+│   │   │   ├── auth/               # Auth endpoints
+│   │   │   └── custom-code/        # Custom code endpoints
+│   │   ├── lib/                    # Server utilities
+│   │   │   ├── controllers/        # Business logic
+│   │   └── db/                     # Database
+│   ├── .env.example                # Environment template
 │   └── package.json
-├── designer-extension/
-│ ├── src/ # Designer Extension frontend
-│ │   ├── /components # UI Components
-      / hooks
-         - useAuth
-         - useDevTools
-│ │   ├── app.tsx # Main UI
-│ ├── .env.development # Environment variables template
-│ └── package.json
-├── .env.example # Environment variables template
-└── package.json
+│
+├── designer-extension/              # Frontend app
+│   ├── src/
+│   │   ├── components/             # React components
+│   │   ├── hooks/                  # Custom hooks
+│   │   ├── services/               # API services/logic
+│   │   ├── types/                  # TypeScript types
+│   │   └── App.tsx                 # Main app component
+│   ├── .env.development            # Dev environment variables
+│   └── package.json
+│└── package.json                     # Root package.json
 ```
 
 ## 📚 Additional Resources
 
-- [Webflow Data Client Documentation](https://developers.webflow.com/v2.0.0/data/docs/getting-started-data-clients)
+- [Data Client Documentation](https://developers.webflow.com/v2.0.0/data/docs/getting-started-data-clients)
+- [Designer Extension Documentation](https://developers.webflow.com/v2.0.0/designer/docs/getting-started-designer-extensions)
 - [OAuth 2.0 Implementation Guide](https://developers.webflow.com/v2.0.0/data/docs/oauth)
+- [Hybrid App Authentication](https://developers.webflow.com/v2.0.0/data/docs/authenticating-users-with-id-tokens)
 - [Available API Scopes](https://developers.webflow.com/v2.0.0/data/reference/scopes)
 
 ## 🤝 Contributing
