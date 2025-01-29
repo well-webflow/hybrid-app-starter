@@ -1,6 +1,6 @@
 import { WebflowClient } from "webflow-api";
 import { NextResponse } from "next/server";
-import { OauthScope } from "webflow-api/api/types";
+import { OauthScope } from "webflow-api/api/types/OAuthScope";
 
 /**
  * Authorize API Route Handler
