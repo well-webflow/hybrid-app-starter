@@ -10,7 +10,7 @@ A starter project for creating a Webflow Hybrid App that demonstrates OAuth auth
 ## 🚀 Quick start
 
 1. Create a Webflow site if you haven't already at [webflow.com](https://webflow.com)
-2. Register your app in [your Workspace](https://developers.webflow.com/v2.0.0/data/docs/register-an-app) Be sure to add a redirect URI to `localhost:3000/auth/api/callback` and the required scopes:
+2. Register your app in [your Workspace](https://developers.webflow.com/v2.0.0/data/docs/register-an-app) Be sure to add a redirect URI to `localhost:3000/api/auth/callback` and the required scopes:
 
    - `sites:read` `sites:write`
    - `custom_code:read` `custom_code:write`
