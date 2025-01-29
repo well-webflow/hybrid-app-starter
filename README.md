@@ -4,9 +4,8 @@ A starter project for creating a Webflow Hybrid App that demonstrates OAuth auth
 
 - [Set up a Webflow Data Client server](https://developers.webflow.com/v2.0.0/data/docs/getting-started-data-clients)
 - [Set up a Webflow Designer Extension frontend](https://developers.webflow.com/v2.0.0/designer/docs/getting-started-designer-extensions)
-- [Implement OAuth 2.0 authentication from the Webflow UI](https://developers.webflow.com/v2.0.0/data/docs/authenticating-users-with-id-tokens)
-- [Make Designer API calls in Webflow](https://developers.webflow.com/designer/reference/introduction)
-- [Make authenticated Data API calls from the Designer Extension](https://developers.webflow.com/data/reference/rest-introduction)
+- [Authenticate from the Designer Extension](https://developers.webflow.com/v2.0.0/data/docs/authenticating-users-with-id-tokens)
+- [Make Designer API  and Data API calls from the Designer Extension](https://developers.webflow.com/designer/reference/introduction)
 
 ## 🚀 Quick start
 
