@@ -79,8 +79,8 @@ export async function setupDevEnvironment(): Promise<string> {
       : null;
 
     const baseUrl = ngrokUrl
-      ? `${ngrokUrl}/api/callback`
-      : `${localUrl}/api/callback`;
+      ? `${ngrokUrl}/api/auth/callback`
+      : `${localUrl}/api/auth/callback`;
     const message = [
       chalk.bold("Development Environment"),
       "",
@@ -90,7 +90,7 @@ export async function setupDevEnvironment(): Promise<string> {
       `${chalk.yellow("⚠")} ${chalk.bold(
         "Update your Webflow callback URL to:"
       )}`,
-      chalk.cyan(`${baseUrl}/api/callback`),
+      chalk.cyan(`${baseUrl}`),
     ].join("\n");
 
     console.log(drawBox(message));
