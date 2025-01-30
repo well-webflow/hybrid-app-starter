@@ -11,13 +11,28 @@ A starter project for creating a Webflow Hybrid App that demonstrates OAuth auth
 
 1. Create a Webflow site if you haven't already at [webflow.com](https://webflow.com)
 2. Register your app in [your Workspace](https://developers.webflow.com/v2.0.0/data/docs/register-an-app) Be sure to add a redirect URI to `localhost:3000/api/auth/callback` and the required scopes:
-
+   
+   - `authorized_user: read`
    - `sites:read` `sites:write`
    - `custom_code:read` `custom_code:write`
 
-3. Clone this repository
+3. Clone this repository and install the dependencies:
 
-4. Navigate to the `/data-client` folder and create a `.env` file by copying `.env.example`. Fill in your app credentials, which can be found in your Webflow Dashboard under Integrations > App Development > Your App Details:
+   ```bash
+   npm install
+   # or
+   yarn install
+   ```
+
+4. Install the Webflow CLI:
+
+   ```bash
+   npm install -g @webflow/cli
+   # or
+   yarn global add @webflow/cli
+   ```
+
+5. Navigate to the `/data-client` folder and create a `.env` file by copying `.env.example`. Fill in your app credentials, which can be found in your Webflow Dashboard under Integrations > App Development > Your App Details:
 
    ```env
    WEBFLOW_CLIENT_ID=xxx
@@ -26,7 +41,7 @@ A starter project for creating a Webflow Hybrid App that demonstrates OAuth auth
    PORT=3000
    ```
 
-5. Run the Data Client and Designer Extension together as a Hybrid App. The run command will install the dependencies and start the server and the designer extension:
+6. Run the Data Client and Designer Extension together as a Hybrid App. The run command will install the dependencies and start the server and the designer extension:
 
    ```bash
    npm run dev
@@ -34,11 +49,11 @@ A starter project for creating a Webflow Hybrid App that demonstrates OAuth auth
    yarn dev
    ```
 
-6. Install your app by going to your Webflow Dashboard > Integrations tab and clicking the "Install" button next to your app
+7. Install your app by navigating to `http://localhost:3000` in your web browser. This will redirect you to the Webflow Authorization page where you can authorize the app for your workspace.
 
-7. Open your Webflow Site. Open the Apps panel and click on your App. When the panel opens click the "Launch Development App" button
+8. Open your Webflow Site. Open the Apps panel and click on your App. When the panel opens click the "Launch Development App" button
 
-8. Click the Authorize button to authenticate your App and start using the Data and Designer APIs
+9. Click the Authorize button to authenticate your App and start using the Data and Designer APIs
 
 ## 🛠️ Tech Stack
 
