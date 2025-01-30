@@ -9,7 +9,7 @@ export function ElementsDashboard() {
   const [elementTree, setElementTree] = useState<ElementMapping | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { mapElement } = useElementMapper();
-  const currentElementId = useRef<string | null>(null);
+  const currentElementId = useRef<FullElementId | null>(null);
   const isMappingInProgress = useRef(false);
 
   const handleElementMapping = useCallback(
