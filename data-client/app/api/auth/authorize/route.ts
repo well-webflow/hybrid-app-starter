@@ -16,10 +16,14 @@ const scopes = [
   "authorized_user:read",
 ];
 
-export async function GET() {
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const isDesigner = searchParams.get("state") === "webflow_designer";
+
   const authorizeUrl = WebflowClient.authorizeURL({
     scope: scopes as OauthScope[],
     clientId: process.env.WEBFLOW_CLIENT_ID!,
+    state: isDesigner ? "webflow_designer" : undefined,
   });
 
   return NextResponse.redirect(authorizeUrl);

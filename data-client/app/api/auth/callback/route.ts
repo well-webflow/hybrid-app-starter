@@ -54,13 +54,15 @@ export async function GET(request: NextRequest) {
     db.insertSiteAuthorization(site.id, accessToken);
   });
 
-  // Check if the authorization request came from a popup window
-  // When users click "Connect to Webflow" in our Designer Extension, it opens in a popup
-  // This helps us determine whether to close the window or redirect the page
-  const isPopup = request.headers.get("sec-fetch-dest") === "document";
+  const authInfo = await webflow.token.introspect()
+  console.log(authInfo)
+
+  // Check if the authorization request came from our Webflow designer extension
+  const isAppPopup = searchParams.get("state") === "webflow_designer";
+  console.log("isAppPopup", isAppPopup)
 
   // If the request is from a popup window, return HTML to close the window
-  if (isPopup) {
+  if (isAppPopup) {
     return new NextResponse(
       `<!DOCTYPE html>
       <html>
@@ -81,12 +83,21 @@ export async function GET(request: NextRequest) {
       }
     );
   } else {
-    // Redirect to the Webflow Designer + Designer Extension with the first site
-    const firstSite = sites?.sites?.[0];
-    if (firstSite) {
+    // If authorized to the Workspace - redirect to the Dashboard
+    const workspaceIds = authInfo?.authorization?.authorizedTo?.workspaceIds
+    console.log("workspaceIds", workspaceIds)
+    if (workspaceIds && workspaceIds.length > 0) {
       return NextResponse.redirect(
-        `https://${firstSite.shortName}.design.webflow.com?app=${process.env.WEBFLOW_CLIENT_ID}`
+        `https:/webflow.com/dashboard?workspace=${workspaceIds[0]}`
       );
+    } else {
+      // If authorized to the Site - redirect to the Designer Extension
+      const firstSite = sites?.sites?.[0];
+      if (firstSite) {
+        return NextResponse.redirect(
+          `https://${firstSite.shortName}.design.webflow.com?app=${process.env.WEBFLOW_CLIENT_ID}`
+        );
+      }
     }
-  }
+    }
 }
