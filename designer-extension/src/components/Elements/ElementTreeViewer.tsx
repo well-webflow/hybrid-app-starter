@@ -24,7 +24,16 @@ function TabPanel(props: TabPanelProps) {
   );
 }
 
-const formatElementData = (element: ElementMapping) => {
+interface FormattedElement {
+  name: string;
+  id: string;
+  type: string;
+  styles: string[];
+  customAttributes: Record<string, unknown>;
+  children: FormattedElement[];
+}
+
+const formatElementData = (element: ElementMapping): FormattedElement => {
   const styleName = element.styles?.[0]?.name;
   const displayName = styleName || `${element.type} (No Style)`;
 

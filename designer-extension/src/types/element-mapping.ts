@@ -2,9 +2,9 @@ export interface ElementMapping {
     id: string;
     type: string;
     styles: StyleMapping[];
-    attributes: { [key: string]: any };
-    children: ElementMapping[];
-    settings?: ElementSettings;
+    attributes: { [key: string]: any } | null;
+    children: ElementMapping[] | null;
+    settings?: ElementSettings | null;
   }
   
   export interface StyleMapping {
@@ -26,4 +26,5 @@ export interface ElementSettings {
     imageSettings?: {
       src?: string;
       alt?: string;
-    };
+    }
+  };

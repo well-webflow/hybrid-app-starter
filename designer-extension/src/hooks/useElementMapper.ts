@@ -1,9 +1,11 @@
-import { ElementMapping } from "../types/element-mapping";
+import { ElementMapping, StyleMapping } from "../types/element-mapping";
 
 export function useElementMapper() {
   const mapElement = async (element: AnyElement): Promise<ElementMapping> => {
     // Get element styles array
-    const stylesArray = element.styles ? await element.getStyles() : [];
+    const stylesArray: Style[] = element.styles 
+      ? (await element.getStyles())?.filter((style): style is Style => style !== null) ?? []
+      : [];
     const styles = await mapElementStyles(element, stylesArray);
 
     // Get element attributes
@@ -17,8 +19,9 @@ export function useElementMapper() {
     // Get and map children recursively
     const children = await mapChildren(element);
 
+    // Return the element mapping
     return {
-      id: element.id,
+      id: element.id.element,
       type: element.type,
       styles,
       attributes,
@@ -67,15 +70,15 @@ export function useElementMapper() {
   };
 
   const getElementSettings = async (element: AnyElement) => {
-    // Handle element-specific settings based on type
     switch (element.type) {
-      case "Link":
+      case "Link": {
+        const target = await (element as LinkElement).getTarget();
         return {
           linkSettings: {
-            target: await (element as LinkElement).getTarget(),
-          },
+            target: target ? String(target) : undefined
+          }
         };
-      // Add other element types as needed
+      }
       default:
         return undefined;
     }

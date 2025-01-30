@@ -66,6 +66,15 @@ export function ElementsDashboard() {
       <ElementTreeToolbar
         onSave={() => {
           const json = JSON.stringify(elementTree, null, 2);
+          const blob = new Blob([json], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'element-tree.json';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
         }}
         onCopy={() => {
           const json = JSON.stringify(elementTree, null, 2);
