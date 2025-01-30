@@ -86,7 +86,7 @@ A starter project for creating a Webflow Hybrid App that demonstrates OAuth auth
 │   │   │   ├── auth/               # Auth endpoints
 │   │   │   └── custom-code/        # Custom code endpoints
 │   │   ├── lib/                    # Server utilities
-│   │   │   ├── controllers/        # Business logic
+│   │   │   ├── controllers/        # Logic for handling requests and responses using the Webflow SDK
 │   │   └── db/                     # Database
 │   ├── .env.example                # Environment template
 │   └── package.json
