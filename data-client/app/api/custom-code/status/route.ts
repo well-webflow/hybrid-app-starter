@@ -72,25 +72,36 @@ async function getCustomCodeStatus(
 }
 
 function formatPageResults(results: Map<string, any>) {
-  const formatted = {};
+  const formatted: Record<
+    string,
+    Record<string, { id: string; location?: string }>
+  > = {};
   for (const [pageId, scripts] of results) {
     formatted[pageId] = {};
-    scripts.forEach((script) => {
-      formatted[pageId][script.id] = script;
+    scripts.forEach((script: { id: string; location?: string }) => {
+      formatted[pageId][script.id] = {
+        id: script.id,
+        location: script.location,
+      };
     });
   }
   return formatted;
 }
 
-function formatSinglePageResult(scripts: any[]) {
-  const result = {};
+function formatSinglePageResult(
+  scripts: Array<{ id: string; location?: string }>
+) {
+  const result: Record<string, { id: string; location?: string }> = {};
   scripts.forEach((script) => {
-    result[script.id] = script;
+    result[script.id] = {
+      id: script.id,
+      location: script.location,
+    };
   });
   return result;
 }
 
-function handleError(error: any) {
+function handleError(error: Error) {
   console.error("Error in status route:", error);
   const status = error.message === "Unauthorized" ? 401 : 500;
   const message =
