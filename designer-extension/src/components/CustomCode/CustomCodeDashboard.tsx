@@ -1,13 +1,13 @@
-import { useEffect, useState, useRef, useCallback } from "react";
-import { Box, Tab, Tabs, Paper } from "@mui/material";
+import { useState, useEffect } from "react";
+import { Box, Tab, Tabs, Paper, CircularProgress } from "@mui/material";
 import {
   useScriptRegistration,
   useScriptSelection,
-  useApplicationStatus,
 } from "../../hooks/useCustomCode";
 import { ScriptRegistration, ScriptsList, SiteTab, PagesTab } from "./";
 import { useAuth } from "../../hooks/useAuth";
 import { CustomCode } from "../../types/types";
+import { useSites } from "../../hooks/useSites";
 
 /**
  * Props interface for the TabPanel component
@@ -58,12 +58,12 @@ function TabPanel(props: TabPanelProps) {
  */
 export function CustomCodeDashboard() {
   const { sessionToken } = useAuth();
-  const hasInitialized = useRef(false);
-  // Track current site information
-  const [currentSite, setCurrentSite] = useState<{
-    id: string;
-    name: string;
-  } | null>(null);
+  const {
+    currentSite,
+    isCurrentSiteLoading,
+    isLoading: isSitesLoading,
+  } = useSites(sessionToken, true);
+
   // Navigation state
   const [mainTab, setMainTab] = useState<"register" | "manage">("register");
   const [applicationTab, setApplicationTab] = useState(0);
@@ -76,67 +76,38 @@ export function CustomCodeDashboard() {
     selectScript,
     applyScript,
   } = useScriptSelection();
-  const { fetchStatus } = useApplicationStatus(
-    sessionToken,
-    selectedScript?.id
-  );
 
   const { registerScript, isRegistering } = useScriptRegistration(
     sessionToken || "",
     currentSite?.id || ""
   );
 
-  /**
-   * Initialize site information on component mount
-   * Fetches site ID and name from Webflow API
-   */
+  // Fetch scripts when switching to manage tab or when site/session changes
   useEffect(() => {
-    async function getSiteInfo() {
-      try {
-        const siteInfo = await webflow.getSiteInfo();
-        console.log("Got site info:", siteInfo);
-        setCurrentSite({ id: siteInfo.siteId, name: siteInfo.siteName });
-      } catch (error) {
-        console.error("Error getting site info:", error);
-      }
+    if (mainTab === "manage" && currentSite?.id && sessionToken) {
+      fetchScripts(currentSite.id, sessionToken);
     }
-    getSiteInfo();
-  }, []);
+  }, [mainTab, currentSite?.id, sessionToken, fetchScripts]);
 
-  /**
-   * Handles data initialization and updates when dependencies change
-   * - Fetches registered scripts on first load
-   * - Updates script application status when managing scripts
-   */
-  useEffect(() => {
-    async function initializeData() {
-      if (!currentSite?.id || !sessionToken) return;
+  // Show loading state while sites are being fetched
+  if (isCurrentSiteLoading || isSitesLoading) {
+    return (
+      <Box sx={{ width: "100%", p: 2, textAlign: "center" }}>
+        <CircularProgress size={20} sx={{ mr: 1 }} />
+        Loading site information...
+      </Box>
+    );
+  }
 
-      try {
-        if (!hasInitialized.current) {
-          await fetchScripts(currentSite.id, sessionToken);
-          hasInitialized.current = true;
-        }
-
-        if (mainTab === "manage" && selectedScript) {
-          await fetchStatus();
-        }
-      } catch (error) {
-        console.error("Error initializing data:", error);
-      }
-    }
-
-    initializeData();
-  }, [
-    currentSite?.id,
-    sessionToken,
-    mainTab,
-    selectedScript,
-    fetchScripts,
-    registerScript,
-    applyScript,
-    fetchStatus,
-  ]);
+  // Show message if no current site is available
+  if (!currentSite) {
+    return (
+      <Box sx={{ width: "100%", p: 2 }}>
+        Unable to load site information. Please make sure you're in a Webflow
+        Designer session.
+      </Box>
+    );
+  }
 
   /**
    * Handles the registration of new custom code
@@ -149,7 +120,6 @@ export function CustomCodeDashboard() {
       await fetchScripts(currentSite?.id || "", sessionToken || "");
     } catch (error) {
       console.error("Error registering code:", error);
-      // Handle error (show notification, etc.)
     }
   };
 
@@ -181,47 +151,42 @@ export function CustomCodeDashboard() {
    * Updates the currently selected script
    * @param script - The script to select for management
    */
-  const handleScriptSelect = useCallback(
-    (script: CustomCode) => {
-      selectScript(script);
-    },
-    [selectScript]
-  );
+  const handleScriptSelect = (script: CustomCode) => {
+    selectScript(script);
+  };
 
   /**
    * Wrapper for applying scripts to site
    */
-  const handleApplyToSite = useCallback(
-    (
-      targetType: "site",
-      targetId: string,
-      location: "header" | "footer",
-      sessionToken: string
-    ) => {
-      return applyScript({
-        targetType,
-        targetId,
-        location,
-        sessionToken,
-      });
-    },
-    [applyScript]
-  );
+  const handleApplyToSite = (
+    targetType: "site",
+    targetId: string,
+    location: "header" | "footer",
+    sessionToken: string
+  ) => {
+    return applyScript({
+      targetType,
+      targetId,
+      location,
+      sessionToken,
+    });
+  };
 
   /**
    * Wrapper for applying scripts to pages
    */
-  const handleApplyToPages = useCallback(
-    (targetType: "page", pageIds: string[], location: "header" | "footer") => {
-      return applyScript({
-        targetType,
-        targetId: pageIds,
-        location,
-        sessionToken: sessionToken || "",
-      });
-    },
-    [applyScript, sessionToken]
-  );
+  const handleApplyToPages = (
+    targetType: "page",
+    pageIds: string[],
+    location: "header" | "footer"
+  ) => {
+    return applyScript({
+      targetType,
+      targetId: pageIds,
+      location,
+      sessionToken: sessionToken || "",
+    });
+  };
 
   return (
     <Box sx={{ width: "100%", pb: "100px" }}>
@@ -237,7 +202,7 @@ export function CustomCodeDashboard() {
         />
       )}
 
-      {mainTab === "manage" && registeredScripts.length > 0 && (
+      {mainTab === "manage" && (
         <>
           <Paper elevation={0} sx={{ mb: 2 }}>
             <ScriptsList
@@ -247,31 +212,33 @@ export function CustomCodeDashboard() {
             />
           </Paper>
 
-          <Paper elevation={0}>
-            <Tabs
-              value={applicationTab}
-              onChange={handleApplicationTabChange}
-              sx={{ borderBottom: 1, borderColor: "divider" }}
-            >
-              <Tab label="Apply to Site" />
-              <Tab label="Apply to Pages" />
-            </Tabs>
+          {registeredScripts.length > 0 && (
+            <Paper elevation={0}>
+              <Tabs
+                value={applicationTab}
+                onChange={handleApplicationTabChange}
+                sx={{ borderBottom: 1, borderColor: "divider" }}
+              >
+                <Tab label="Apply to Site" />
+                <Tab label="Apply to Pages" />
+              </Tabs>
 
-            <TabPanel value={applicationTab} index={0}>
-              <SiteTab
-                currentSite={currentSite}
-                selectedScript={selectedScript}
-                onApplyCode={handleApplyToSite}
-              />
-            </TabPanel>
+              <TabPanel value={applicationTab} index={0}>
+                <SiteTab
+                  currentSite={currentSite}
+                  selectedScript={selectedScript}
+                  onApplyCode={handleApplyToSite}
+                />
+              </TabPanel>
 
-            <TabPanel value={applicationTab} index={1}>
-              <PagesTab
-                selectedScript={selectedScript}
-                onApplyCode={handleApplyToPages}
-              />
-            </TabPanel>
-          </Paper>
+              <TabPanel value={applicationTab} index={1}>
+                <PagesTab
+                  selectedScript={selectedScript}
+                  onApplyCode={handleApplyToPages}
+                />
+              </TabPanel>
+            </Paper>
+          )}
         </>
       )}
     </Box>

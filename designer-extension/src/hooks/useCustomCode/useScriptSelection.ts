@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { customCodeApi } from "../../services/customCode";
 import { CustomCode } from "../../types/types";
+import { getApplicationStatusKey } from "./useApplicationStatus";
 
 interface ScriptQueryParams {
   siteId: string;
@@ -69,37 +70,58 @@ export function useScriptSelection() {
     }) => {
       if (!selectedScript?.id) return;
 
-      if (Array.isArray(targetId)) {
-        for (const id of targetId) {
+      // For optimistic updates
+      const updateKey = getApplicationStatusKey(
+        selectedScript.id,
+        queryParams?.siteId,
+        Array.isArray(targetId) ? targetId : [targetId]
+      );
+
+      try {
+        if (Array.isArray(targetId)) {
+          // Apply to each page with a small delay to avoid rate limits
+          for (const id of targetId) {
+            await customCodeApi.applyScript(
+              {
+                scriptId: selectedScript.id,
+                targetType: "page",
+                targetId: id,
+                location,
+                version: selectedScript.version,
+              },
+              sessionToken
+            );
+            // Small delay between requests
+            if (targetId.length > 1) {
+              await new Promise((resolve) => setTimeout(resolve, 100));
+            }
+          }
+        } else {
           await customCodeApi.applyScript(
             {
               scriptId: selectedScript.id,
-              targetType: "page",
-              targetId: id,
+              targetType,
+              targetId,
               location,
               version: selectedScript.version,
             },
             sessionToken
           );
         }
-      } else {
-        await customCodeApi.applyScript(
-          {
-            scriptId: selectedScript.id,
-            targetType,
-            targetId,
-            location,
-            version: selectedScript.version,
-          },
-          sessionToken
-        );
+
+        // Wait a moment for the changes to propagate
+        await new Promise((resolve) => setTimeout(resolve, 500));
+
+        // Force a fresh fetch of the application status
+        await queryClient.refetchQueries({
+          queryKey: updateKey,
+          exact: true,
+          type: "active",
+        });
+      } catch (error) {
+        console.error("Error applying script:", error);
+        throw error;
       }
-    },
-    onSuccess: () => {
-      // Force a refetch of application status immediately after applying
-      queryClient.invalidateQueries({
-        queryKey: ["applicationStatus"],
-      });
     },
   });
 

@@ -3,7 +3,17 @@ import { customCodeApi } from "../../services/customCode";
 import { ApplicationStatus, ScriptStatus } from "../../types/types";
 
 // Maximum number of pages to request at once
-const MAX_PAGES_PER_REQUEST = 20;
+const MAX_PAGES_PER_REQUEST = 10;
+
+// Helper to generate a consistent query key
+export const getApplicationStatusKey = (
+  scriptId?: string,
+  siteId?: string,
+  pageIds: string[] = []
+) => {
+  const stablePageKey = pageIds.slice().sort().join(",");
+  return ["applicationStatus", scriptId, siteId, stablePageKey];
+};
 
 /**
  * Hook for managing and tracking the application status of scripts
@@ -22,10 +32,7 @@ export function useApplicationStatus(
   pageIds: string[] = []
 ) {
   const queryClient = useQueryClient();
-
-  // Create a stable query key that won't change with page reordering
-  const stablePageKey = pageIds.slice().sort().join(",");
-  const queryKey = ["applicationStatus", scriptId, siteId, stablePageKey];
+  const queryKey = getApplicationStatusKey(scriptId, siteId, pageIds);
 
   const {
     data: applicationStatus = {},
@@ -87,28 +94,8 @@ export function useApplicationStatus(
     enabled: Boolean(sessionToken && scriptId && siteId),
     staleTime: 60 * 1000, // Consider data fresh for 1 minute
     gcTime: 5 * 60 * 1000, // Keep unused data in cache for 5 minutes
-    placeholderData: () => {
-      // Try to find data from previous queries that might be relevant
-      const previousData = queryClient.getQueriesData<ApplicationStatus>({
-        queryKey: ["applicationStatus", scriptId, siteId],
-      });
-
-      // Return the most recent matching data if available
-      const mostRecent = previousData[0]?.[1];
-      if (mostRecent) {
-        // Filter to only include requested pageIds
-        const filtered: ApplicationStatus = {};
-        pageIds.forEach((pageId) => {
-          if (mostRecent[pageId]) {
-            filtered[pageId] = mostRecent[pageId];
-          } else {
-            filtered[pageId] = { isApplied: false };
-          }
-        });
-        return filtered;
-      }
-
-      // If no previous data, return empty status for each page
+    placeholderData: (previousData) => {
+      if (previousData) return previousData;
       return pageIds.reduce((acc, pageId) => {
         acc[pageId] = { isApplied: false };
         return acc;
