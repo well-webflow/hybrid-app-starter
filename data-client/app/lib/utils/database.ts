@@ -82,21 +82,11 @@ export async function insertSiteAuthorization(
   accessToken: string
 ) {
   const db = await getDb();
-  const existing = await db.get(
-    "SELECT * FROM siteAuthorizations WHERE siteId = ?",
-    [siteId]
-  );
-
-  if (existing) {
-    console.log("Site auth already exists:", existing);
-    return existing;
-  }
-
   await db.run(
-    "INSERT INTO siteAuthorizations (siteId, accessToken) VALUES (?, ?)",
+    "REPLACE INTO siteAuthorizations (siteId, accessToken) VALUES (?, ?)",
     [siteId, accessToken]
   );
-  console.log("Site authorization pairing inserted successfully.");
+  console.log("Site authorization pairing updated.");
 }
 
 /**
@@ -111,21 +101,11 @@ export async function insertUserAuthorization(
   accessToken: string
 ) {
   const db = await getDb();
-  const existing = await db.get(
-    "SELECT * FROM userAuthorizations WHERE userId = ?",
-    [userId]
-  );
-
-  if (existing) {
-    console.log("Access token pairing already exists:", existing);
-    return existing;
-  }
-
   await db.run(
-    "INSERT INTO userAuthorizations (userId, accessToken) VALUES (?, ?)",
+    "REPLACE INTO userAuthorizations (userId, accessToken) VALUES (?, ?)",
     [userId, accessToken]
   );
-  console.log("User access token pairing inserted successfully.");
+  console.log("User access token pairing updated.");
 }
 
 /**
