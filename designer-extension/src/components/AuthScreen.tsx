@@ -19,8 +19,7 @@ export function AuthScreen({ onAuth }: { onAuth: () => void }) {
   const base_url = import.meta.env.VITE_NEXTJS_API_URL;
 
   // Initialize the auth hook which provides methods for authentication
-  // like exchangeAndVerifyIdToken(), logout(), and access to auth state
-  const { user, exchangeAndVerifyIdToken } = useAuth();
+  const { user } = useAuth();
 
   // Function to open the authorization popup authorization window
   const openAuthScreen = () => {
@@ -34,16 +33,10 @@ export function AuthScreen({ onAuth }: { onAuth: () => void }) {
     // Check if the authorization window is closed
     const checkWindow = setInterval(() => {
       if (authWindow?.closed) {
-        console.log("Auth window closed, checking token..."); // Debug
-        // When the auth popup closes:
-        // 1. Stop checking for window status (clear interval)
-        // 2. Verify if authentication was successful by checking for a new token
-        // 3. If successful, trigger the onAuth callback to update parent components
+        console.log("Auth window closed"); // Debug
         clearInterval(checkWindow);
-        exchangeAndVerifyIdToken().then(() => {
-          console.log("Token check complete"); // Debug
-          onAuth();
-        });
+        // The token exchange will be handled by the message event listener in App.tsx
+        onAuth();
       }
     }, 1000);
   };

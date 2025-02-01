@@ -1,5 +1,4 @@
-import { useCallback } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
 import { jwtDecode } from "jwt-decode";
 import { User, DecodedToken } from "../types/types";
 
@@ -36,8 +35,8 @@ interface AuthState {
  * - logout: Clear authentication state
  */
 export function useAuth() {
-  // Get access to React Query's cache management
   const queryClient = useQueryClient();
+  const isExchangingToken = { current: false };
 
   // Query for managing auth state and token validation
   const { data: authState, isLoading: isAuthLoading } = useQuery<AuthState>({
@@ -62,12 +61,12 @@ export function useAuth() {
         // Decode and validate token
         const decodedToken = jwtDecode(userData.sessionToken) as DecodedToken;
         if (decodedToken.exp * 1000 <= Date.now()) {
-          // Token expired
+          // Token expired - clear storage
+          localStorage.removeItem("wf_hybrid_user");
           return { user: { firstName: "", email: "" }, sessionToken: "" };
         }
 
         // Return valid auth state
-        console.log("decodedToken", decodedToken.user);
         return {
           user: {
             firstName: decodedToken.user.firstName,
@@ -77,10 +76,16 @@ export function useAuth() {
         };
       } catch (error) {
         console.error("Error parsing stored user data:", error);
+        // Clear invalid data
+        localStorage.removeItem("wf_hybrid_user");
         return { user: { firstName: "", email: "" }, sessionToken: "" };
       }
     },
-    staleTime: 1000 * 60 * 5, // Consider data fresh for 5 minutes
+    staleTime: Infinity, // Never consider the data stale
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    gcTime: 1000 * 60 * 60, // Cache for 1 hour
   });
 
   // Mutation for exchanging ID token for session token
@@ -123,9 +128,16 @@ export function useAuth() {
 
         // Update localStorage
         localStorage.setItem("wf_hybrid_user", JSON.stringify(userData));
+        localStorage.removeItem("explicitly_logged_out");
 
-        // Update auth state through query invalidation
-        queryClient.invalidateQueries({ queryKey: ["auth"] });
+        // Directly update the query data instead of invalidating
+        queryClient.setQueryData<AuthState>(["auth"], {
+          user: {
+            firstName: decodedToken.user.firstName,
+            email: decodedToken.user.email,
+          },
+          sessionToken: data.sessionToken,
+        });
       } catch (error) {
         console.error("Error decoding token:", error);
       }
@@ -133,8 +145,30 @@ export function useAuth() {
   });
 
   // Function to initiate token exchange process
-  const exchangeAndVerifyIdToken = useCallback(async () => {
+  const exchangeAndVerifyIdToken = async () => {
+    // Check if we already have a valid session token
+    const storedUser = localStorage.getItem("wf_hybrid_user");
+    if (storedUser) {
+      try {
+        const userData = JSON.parse(storedUser);
+        if (userData.sessionToken) {
+          const decodedToken = jwtDecode(userData.sessionToken) as DecodedToken;
+          if (decodedToken.exp * 1000 > Date.now()) {
+            return;
+          }
+        }
+      } catch (error) {
+        console.error("Error checking stored token:", error);
+      }
+    }
+
+    if (isExchangingToken.current) {
+      console.log("Token exchange already in progress");
+      return;
+    }
+
     try {
+      isExchangingToken.current = true;
       // Small delay to prevent rapid retries
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
@@ -150,11 +184,15 @@ export function useAuth() {
       await tokenMutation.mutateAsync(idToken);
     } catch (error) {
       console.error("Detailed error in token exchange:", error);
+      // Clear storage on error to force re-auth
+      localStorage.removeItem("wf_hybrid_user");
+    } finally {
+      isExchangingToken.current = false;
     }
-  }, [tokenMutation]);
+  };
 
   // Function to handle user logout
-  const logout = useCallback(() => {
+  const logout = () => {
     // Set logout flag and clear storage
     localStorage.setItem("explicitly_logged_out", "true");
     localStorage.removeItem("wf_hybrid_user");
@@ -163,7 +201,7 @@ export function useAuth() {
       sessionToken: "",
     });
     queryClient.clear();
-  }, [queryClient]);
+  };
 
   return {
     user: authState?.user || { firstName: "", email: "" },
