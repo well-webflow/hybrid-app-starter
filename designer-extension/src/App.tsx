@@ -1,7 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider, Box } from "@mui/material";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { Navigation } from "./components/Navigation";
 import { CustomCodeDashboard } from "./components/CustomCode/CustomCodeDashboard";
@@ -24,16 +23,6 @@ import { ElementsDashboard } from "./components/Elements/ElementsDashboard";
  * The code is intentionally verbose to show common patterns
  * you might need when building your own Webflow App.
  */
-
-// React Query setup - Used for managing API calls and caching
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
-      refetchOnWindowFocus: false,
-    },
-  },
-});
 
 // This is the main App Component. It handles the initial setup and rendering of the Dashboard.
 function AppContent() {
@@ -68,13 +57,17 @@ function AppContent() {
     const handleAuthComplete = async (event: MessageEvent) => {
       if (event.data === "authComplete") {
         localStorage.removeItem("explicitly_logged_out");
-        // Don't reset hasCheckedToken here, as we don't need to recheck
         await exchangeAndVerifyIdToken();
       }
     };
+
     // Add the event listener for the authentication complete event
     window.addEventListener("message", handleAuthComplete);
-    return () => window.removeEventListener("message", handleAuthComplete);
+    return () => {
+      window.removeEventListener("message", handleAuthComplete);
+      // Reset the check on unmount so it can run again if needed
+      hasCheckedToken.current = false;
+    };
   }, [exchangeAndVerifyIdToken]);
 
   // Handle the fetch sites button click
@@ -128,11 +121,9 @@ function AppContent() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider theme={theme}>
-        <AppContent />
-      </ThemeProvider>
-    </QueryClientProvider>
+    <ThemeProvider theme={theme}>
+      <AppContent />
+    </ThemeProvider>
   );
 }
 
