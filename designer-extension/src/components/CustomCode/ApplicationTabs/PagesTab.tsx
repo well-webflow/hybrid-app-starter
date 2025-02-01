@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   Box,
   Button,
@@ -16,7 +16,14 @@ import { green } from "@mui/material/colors";
 import { CustomCode } from "../../../types/types";
 import { useAuth } from "../../../hooks/useAuth";
 import { useApplicationStatus } from "../../../hooks/useCustomCode/useApplicationStatus";
+import { usePages } from "../../../hooks/usePages";
+import { useSites } from "../../../hooks/useSites";
 
+/**
+ * Props for the PagesTab component
+ * @property {CustomCode | null} selectedScript - Currently selected script to apply
+ * @property {Function} onApplyCode - Callback function to apply script to pages
+ */
 interface PagesTabProps {
   selectedScript: CustomCode | null;
   onApplyCode: (
@@ -26,83 +33,55 @@ interface PagesTabProps {
   ) => Promise<void>;
 }
 
-interface ApplicationStatus {
-  [pageId: string]: {
-    isApplied: boolean;
-    location?: "header" | "footer";
-  };
-}
-
-export function PagesTab({
-  selectedScript,
-  onApplyCode,
-}: Omit<PagesTabProps, "applicationStatus">) {
+/**
+ * PagesTab component handles the application of scripts to individual pages.
+ * It provides functionality to:
+ * - View and search through all pages in the site
+ * - Select multiple pages at once
+ * - Apply scripts to selected pages
+ * - View real-time application status for each page
+ */
+export function PagesTab({ selectedScript, onApplyCode }: PagesTabProps) {
   const { sessionToken } = useAuth();
-  const [pages, setPages] = useState<Page[]>([]);
+  // Track which pages are selected for script application
   const [selectedPages, setSelectedPages] = useState<string[]>([]);
+  // Search term for filtering pages
   const [searchTerm, setSearchTerm] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
 
-  // Get the current site ID
-  const [currentSite, setCurrentSite] = useState<{ id: string } | null>(null);
+  // Get the current site using React Query
+  // This automatically handles caching and updates
+  const { sites } = useSites(sessionToken, true);
+  const currentSite = sites[0]; // Using first site in the list
 
-  // Get site info first
-  useEffect(() => {
-    async function getSiteInfo() {
-      try {
-        const siteInfo = await webflow.getSiteInfo();
-        setCurrentSite({ id: siteInfo.siteId });
-      } catch (error) {
-        console.error("Error getting site info:", error);
-      }
-    }
-    getSiteInfo();
-  }, []);
+  // Fetch pages data using React Query
+  // This automatically handles:
+  // - Caching of page data
+  // - Loading states
+  // - Automatic updates when site changes
+  const { data: pages = [], isLoading: isPagesLoading } = usePages(
+    currentSite?.id
+  );
 
-  const {
-    applicationStatus,
-    isLoading: isStatusLoading,
-    fetchStatus,
-  } = useApplicationStatus(sessionToken, selectedScript?.id);
+  // Fetch application status for all pages using React Query
+  // This tells us which pages have the script applied and where (header/footer)
+  const { applicationStatus, isLoading: isStatusLoading } =
+    useApplicationStatus(
+      sessionToken,
+      selectedScript?.id,
+      currentSite?.id,
+      pages.map((p) => p.id)
+    );
 
-  // Fetch pages and status
-  useEffect(() => {
-    const fetchPagesAndStatus = async () => {
-      if (!currentSite?.id) return;
-
-      setIsLoading(true);
-      try {
-        const pagesData = await webflow.getAllPagesAndFolders();
-        const formattedPages = await Promise.all(
-          pagesData.map(async (page) => ({
-            id: page.id,
-            name: await page.getName(),
-            url: page.url || page.slug || "",
-          }))
-        );
-        setPages(formattedPages);
-
-        // Only fetch status if we have a selected script
-        if (selectedScript && formattedPages.length > 0) {
-          await fetchStatus(
-            currentSite.id, // Use the actual site ID
-            formattedPages.map((p) => p.id)
-          );
-        }
-      } catch (error) {
-        console.error("Error fetching pages:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchPagesAndStatus();
-  }, [currentSite?.id, selectedScript?.id]);
-
+  // Filter pages based on search term
   const filteredPages = pages.filter((page) =>
     page.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  /**
+   * Handles selecting/deselecting all visible pages
+   * If all pages are currently selected, deselects them all
+   * If some or no pages are selected, selects all filtered pages
+   */
   const handleSelectAll = () => {
     if (selectedPages.length === filteredPages.length) {
       setSelectedPages([]);
@@ -111,6 +90,10 @@ export function PagesTab({
     }
   };
 
+  /**
+   * Handles toggling selection of a single page
+   * Adds or removes the page ID from the selectedPages array
+   */
   const handleTogglePage = (pageId: string) => {
     setSelectedPages((prev) =>
       prev.includes(pageId)
@@ -119,22 +102,26 @@ export function PagesTab({
     );
   };
 
+  /**
+   * Handles applying the script to all selected pages
+   * The mutation in useScriptSelection will automatically:
+   * - Apply the script to each page
+   * - Invalidate the status cache
+   * - Trigger a refetch of the status
+   */
   const handleApplyCode = async (location: "header" | "footer") => {
     if (!selectedScript || selectedPages.length === 0) return;
 
     try {
       await onApplyCode("page", selectedPages, location);
-      // Refresh status after applying
-      await fetchStatus(
-        "",
-        pages.map((p) => p.id)
-      );
+      // Status will automatically update via React Query's cache invalidation
     } catch (error) {
       console.error("Error applying code to pages:", error);
     }
   };
 
-  if (isLoading || isStatusLoading) {
+  // Show loading state while fetching pages or status
+  if (isPagesLoading || isStatusLoading) {
     return (
       <Box sx={{ p: 2, textAlign: "center" }}>
         <CircularProgress size={20} sx={{ mr: 1 }} />
@@ -151,6 +138,16 @@ export function PagesTab({
         Apply to Pages
       </Typography>
 
+      {/* 
+        Search and Bulk Selection Section
+        --------------------------------
+        Provides:
+        1. Search input to filter pages by name
+        2. Select All button that:
+           - Shows "Select All" when no or some pages are selected
+           - Shows "Deselect All" when all filtered pages are selected
+           - Only affects currently filtered pages
+      */}
       <Box sx={{ mb: 2 }}>
         <TextField
           fullWidth
@@ -167,6 +164,22 @@ export function PagesTab({
         </Button>
       </Box>
 
+      {/* 
+        Pages List Section
+        -----------------
+        Scrollable list of pages showing:
+        1. Checkbox for selection
+        2. Page name and URL
+        3. Application status (if script is applied)
+           - Green checkmark
+           - "Applied" text
+        
+        The list:
+        - Only shows pages matching the search term
+        - Updates selection state immediately
+        - Shows real-time application status
+        - Handles large numbers of pages with virtualization
+      */}
       <Paper
         variant="outlined"
         sx={{ mb: 2, maxHeight: 400, overflow: "auto" }}
@@ -202,6 +215,18 @@ export function PagesTab({
         </List>
       </Paper>
 
+      {/* 
+        Action Buttons Section
+        ---------------------
+        Buttons to apply the script to all selected pages:
+        1. Apply to Header - adds script to <head> of each page
+        2. Apply to Footer - adds script to end of <body> of each page
+        
+        Buttons are:
+        - Disabled when no script is selected or no pages are selected
+        - Apply to all selected pages in a single operation
+        - Automatically update status when complete
+      */}
       <Box sx={{ display: "flex", gap: 2 }}>
         <Button
           variant="contained"

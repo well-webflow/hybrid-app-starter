@@ -19,8 +19,8 @@ export function AuthScreen({ onAuth }: { onAuth: () => void }) {
   const base_url = import.meta.env.VITE_NEXTJS_API_URL;
 
   // Initialize the auth hook which provides methods for authentication
-  // like checkAndGetToken(), logout(), and access to auth state
-  const auth = useAuth();
+  // like exchangeAndVerifyIdToken(), logout(), and access to auth state
+  const { user, exchangeAndVerifyIdToken } = useAuth();
 
   // Function to open the authorization popup authorization window
   const openAuthScreen = () => {
@@ -40,7 +40,7 @@ export function AuthScreen({ onAuth }: { onAuth: () => void }) {
         // 2. Verify if authentication was successful by checking for a new token
         // 3. If successful, trigger the onAuth callback to update parent components
         clearInterval(checkWindow);
-        auth.checkAndGetToken().then(() => {
+        exchangeAndVerifyIdToken().then(() => {
           console.log("Token check complete"); // Debug
           onAuth();
         });
@@ -50,7 +50,11 @@ export function AuthScreen({ onAuth }: { onAuth: () => void }) {
 
   return (
     <Container sx={{ padding: "20px" }}>
-      <Typography variant="h1">Hello Stranger 👋🏾</Typography>
+      <Typography variant="h1">
+        {user.firstName
+          ? `Welcome back ${user.firstName} 👋🏾`
+          : "Hello Stranger 👋🏾"}
+      </Typography>
       <Button
         variant="contained"
         sx={{ margin: "10px 20px" }}

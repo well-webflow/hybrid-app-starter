@@ -119,7 +119,7 @@ export function CustomCodeDashboard() {
         }
 
         if (mainTab === "manage" && selectedScript) {
-          await fetchStatus(currentSite.id);
+          await fetchStatus();
         }
       } catch (error) {
         console.error("Error initializing data:", error);
@@ -188,6 +188,41 @@ export function CustomCodeDashboard() {
     [selectScript]
   );
 
+  /**
+   * Wrapper for applying scripts to site
+   */
+  const handleApplyToSite = useCallback(
+    (
+      targetType: "site",
+      targetId: string,
+      location: "header" | "footer",
+      sessionToken: string
+    ) => {
+      return applyScript({
+        targetType,
+        targetId,
+        location,
+        sessionToken,
+      });
+    },
+    [applyScript]
+  );
+
+  /**
+   * Wrapper for applying scripts to pages
+   */
+  const handleApplyToPages = useCallback(
+    (targetType: "page", pageIds: string[], location: "header" | "footer") => {
+      return applyScript({
+        targetType,
+        targetId: pageIds,
+        location,
+        sessionToken: sessionToken || "",
+      });
+    },
+    [applyScript, sessionToken]
+  );
+
   return (
     <Box sx={{ width: "100%", pb: "100px" }}>
       <Tabs value={mainTab} onChange={handleMainTabChange}>
@@ -226,16 +261,14 @@ export function CustomCodeDashboard() {
               <SiteTab
                 currentSite={currentSite}
                 selectedScript={selectedScript}
-                onApplyCode={applyScript}
+                onApplyCode={handleApplyToSite}
               />
             </TabPanel>
 
             <TabPanel value={applicationTab} index={1}>
               <PagesTab
                 selectedScript={selectedScript}
-                onApplyCode={(targetType, pageIds, location) =>
-                  applyScript(targetType, pageIds, location, sessionToken || "")
-                }
+                onApplyCode={handleApplyToPages}
               />
             </TabPanel>
           </Paper>
