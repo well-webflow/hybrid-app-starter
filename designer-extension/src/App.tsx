@@ -12,7 +12,7 @@ import { useAuth } from "./hooks/useAuth"; // Manages authentication state and p
 import { useSites } from "./hooks/useSites"; // Fetches and manages site data using the session token
 import { theme } from "./components/theme";
 import "./App.css";
-import { ElementsDashboard } from "./components/Elements/ElementsDashbaord";
+import { ElementsDashboard } from "./components/Elements/ElementsDashboard";
 
 /**
  * App.tsx serves as the main entry point and demonstrates:
@@ -26,12 +26,19 @@ import { ElementsDashboard } from "./components/Elements/ElementsDashbaord";
  */
 
 // React Query setup - Used for managing API calls and caching
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 // This is the main App Component. It handles the initial setup and rendering of the Dashboard.
 function AppContent() {
   const [hasClickedFetch, setHasClickedFetch] = useState(false);
-  const { user, sessionToken, checkAndGetToken, logout } = useAuth();
+  const { user, sessionToken, exchangeAndVerifyIdToken, logout } = useAuth();
   const { sites, isLoading, isError, error, fetchSites } = useSites(
     sessionToken,
     hasClickedFetch
@@ -52,7 +59,7 @@ function AppContent() {
       );
 
       if (storedUser && !wasExplicitlyLoggedOut) {
-        checkAndGetToken();
+        exchangeAndVerifyIdToken();
       }
       hasCheckedToken.current = true;
     }
@@ -62,13 +69,13 @@ function AppContent() {
       if (event.data === "authComplete") {
         localStorage.removeItem("explicitly_logged_out");
         // Don't reset hasCheckedToken here, as we don't need to recheck
-        await checkAndGetToken();
+        await exchangeAndVerifyIdToken();
       }
     };
     // Add the event listener for the authentication complete event
     window.addEventListener("message", handleAuthComplete);
     return () => window.removeEventListener("message", handleAuthComplete);
-  }, [checkAndGetToken]);
+  }, [exchangeAndVerifyIdToken]);
 
   // Handle the fetch sites button click
   const handleFetchSites = () => {
