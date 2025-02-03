@@ -141,9 +141,9 @@ export interface CodeApplication {
  * @property {ScriptLocation} location - Where the script is applied
  */
 export interface ApplicationStatus {
-  [key: string]: {
+  [pageId: string]: {
     isApplied: boolean;
-    location?: ScriptLocation;
+    location?: "header" | "footer";
   };
 }
 

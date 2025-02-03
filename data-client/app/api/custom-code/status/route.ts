@@ -3,6 +3,11 @@ import { ScriptController } from "../../../lib/controllers/scriptControllers";
 import jwt from "../../../lib/utils/jwt";
 import { NextRequest, NextResponse } from "next/server";
 
+interface Script {
+  id: string;
+  location?: string;
+}
+
 export async function GET(request: NextRequest) {
   try {
     // Add auth verification
@@ -21,12 +26,12 @@ export async function GET(request: NextRequest) {
       scriptController,
       targetType,
       targetId,
-      targetIds
+      targetIds || null
     );
 
     return NextResponse.json({ result }, { status: 200 });
   } catch (error) {
-    return handleError(error);
+    return handleError(error as Error);
   }
 }
 
@@ -71,26 +76,34 @@ async function getCustomCodeStatus(
   throw new Error("Invalid target type");
 }
 
-function formatPageResults(results: Map<string, any>) {
-  const formatted = {};
+function formatPageResults(results: Map<string, Script[]>) {
+  const formatted: Record<string, Record<string, Script>> = {};
   for (const [pageId, scripts] of results) {
     formatted[pageId] = {};
     scripts.forEach((script) => {
-      formatted[pageId][script.id] = script;
+      formatted[pageId][script.id] = {
+        id: script.id,
+        location: script.location,
+      };
     });
   }
   return formatted;
 }
 
-function formatSinglePageResult(scripts: any[]) {
-  const result = {};
+function formatSinglePageResult(
+  scripts: Array<{ id: string; location?: string }>
+) {
+  const result: Record<string, { id: string; location?: string }> = {};
   scripts.forEach((script) => {
-    result[script.id] = script;
+    result[script.id] = {
+      id: script.id,
+      location: script.location,
+    };
   });
   return result;
 }
 
-function handleError(error: any) {
+function handleError(error: Error) {
   console.error("Error in status route:", error);
   const status = error.message === "Unauthorized" ? 401 : 500;
   const message =

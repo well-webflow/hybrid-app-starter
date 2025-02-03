@@ -38,6 +38,7 @@ export const customCodeApi = {
       },
       body: JSON.stringify(params),
     });
+    console.log(params);
     return response.json();
   },
 

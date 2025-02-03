@@ -1,6 +1,19 @@
-import { useState, useCallback, useRef } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { customCodeApi } from "../../services/customCode";
 import { ApplicationStatus, ScriptStatus } from "../../types/types";
+
+// Maximum number of pages to request at once
+const MAX_PAGES_PER_REQUEST = 10;
+
+// Helper to generate a consistent query key
+export const getApplicationStatusKey = (
+  scriptId?: string,
+  siteId?: string,
+  pageIds: string[] = []
+) => {
+  const stablePageKey = pageIds.slice().sort().join(",");
+  return ["applicationStatus", scriptId, siteId, stablePageKey];
+};
 
 /**
  * Hook for managing and tracking the application status of scripts
@@ -8,81 +21,92 @@ import { ApplicationStatus, ScriptStatus } from "../../types/types";
  *
  * @param sessionToken - The user's authentication token
  * @param scriptId - The ID of the script to track
- * @returns {Object} Object containing:
- *   - applicationStatus: Current status of script application
- *   - isLoading: Loading state for status checks
- *   - fetchStatus: Function to fetch latest status
+ * @param siteId - The Webflow site ID to check
+ * @param pageIds - Optional array of page IDs to check status for
+ * @returns {Object} Object containing application status data and utility functions
  */
-export function useApplicationStatus(sessionToken: string, scriptId?: string) {
-  // Track application status state
-  const [applicationStatus, setApplicationStatus] = useState<ApplicationStatus>(
-    {}
-  );
-  const [isLoading, setIsLoading] = useState(false);
+export function useApplicationStatus(
+  sessionToken: string,
+  scriptId?: string,
+  siteId?: string,
+  pageIds: string[] = []
+) {
+  const queryClient = useQueryClient();
+  const queryKey = getApplicationStatusKey(scriptId, siteId, pageIds);
 
-  // Cache to prevent unnecessary API calls
-  // Key format: `${siteId}-${scriptId}`
-  const statusCache = useRef<Record<string, ApplicationStatus>>({});
-
-  /**
-   * Fetch the application status for a script across site/pages
-   * Checks both site-level and page-level applications of the script
-   *
-   * @param siteId - The Webflow site ID to check
-   * @param pageIds - Optional array of page IDs to check status for
-   * @returns Object mapping targets (site/pages) to their application status
-   * @throws Will throw an error if the API request fails
-   */
-  const fetchStatus = useCallback(
-    async (siteId: string, pageIds: string[] = []) => {
-      if (!scriptId) {
+  const {
+    data: applicationStatus = {},
+    isLoading,
+    error,
+    refetch: fetchStatus,
+  } = useQuery({
+    queryKey,
+    queryFn: async () => {
+      if (!scriptId || !siteId) {
         return {};
       }
 
-      // Check cache first to avoid unnecessary API calls
-      const cacheKey = `${siteId}-${scriptId}`;
-      if (statusCache.current[cacheKey]) {
-        setApplicationStatus(statusCache.current[cacheKey]);
-        return statusCache.current[cacheKey];
+      // Get any existing cached data
+      const existingData =
+        queryClient.getQueryData<ApplicationStatus>(queryKey) || {};
+
+      // Find which pages we need to fetch (don't have cached data for)
+      const pagesToFetch = pageIds.filter((pageId) => !existingData[pageId]);
+
+      if (pagesToFetch.length === 0) {
+        return existingData;
       }
 
-      setIsLoading(true);
-      try {
+      // Split pages into chunks to avoid overwhelming the server
+      const chunks = [];
+      for (let i = 0; i < pagesToFetch.length; i += MAX_PAGES_PER_REQUEST) {
+        chunks.push(pagesToFetch.slice(i, i + MAX_PAGES_PER_REQUEST));
+      }
+
+      const newStatus: ApplicationStatus = { ...existingData };
+
+      // Process each chunk sequentially to avoid rate limits
+      for (const chunk of chunks) {
         const status = await customCodeApi.getBatchStatus(
           siteId,
-          pageIds,
+          chunk,
           sessionToken
         );
 
         // Process and format the status response
-        // Converts the raw API response into a more usable format
-        const filteredStatus: ApplicationStatus = {};
         Object.entries(status as Record<string, ScriptStatus>).forEach(
           ([pageId, scripts]) => {
-            filteredStatus[pageId] = {
+            newStatus[pageId] = {
               isApplied: Boolean(scripts[scriptId]),
               location: scripts[scriptId]?.location,
             };
           }
         );
 
-        // Update cache and state with the new status
-        statusCache.current[cacheKey] = filteredStatus;
-        setApplicationStatus(filteredStatus);
-        return filteredStatus;
-      } catch (error) {
-        console.error("Error fetching status:", error);
-        throw error;
-      } finally {
-        setIsLoading(false);
+        // If there are more chunks, add a small delay
+        if (chunks.length > 1) {
+          await new Promise((resolve) => setTimeout(resolve, 100));
+        }
       }
+
+      return newStatus;
     },
-    [sessionToken, scriptId]
-  );
+    enabled: Boolean(sessionToken && scriptId && siteId),
+    staleTime: 60 * 1000, // Consider data fresh for 1 minute
+    gcTime: 5 * 60 * 1000, // Keep unused data in cache for 5 minutes
+    placeholderData: (previousData) => {
+      if (previousData) return previousData;
+      return pageIds.reduce((acc, pageId) => {
+        acc[pageId] = { isApplied: false };
+        return acc;
+      }, {} as ApplicationStatus);
+    },
+  });
 
   return {
     applicationStatus,
     isLoading,
+    error,
     fetchStatus,
   };
 }

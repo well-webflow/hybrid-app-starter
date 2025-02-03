@@ -1,7 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider, Box } from "@mui/material";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { Navigation } from "./components/Navigation";
 import { CustomCodeDashboard } from "./components/CustomCode/CustomCodeDashboard";
@@ -12,7 +11,7 @@ import { useAuth } from "./hooks/useAuth"; // Manages authentication state and p
 import { useSites } from "./hooks/useSites"; // Fetches and manages site data using the session token
 import { theme } from "./components/theme";
 import "./App.css";
-import { ElementsDashboard } from "./components/Elements/ElementsDashbaord";
+import { ElementsDashboard } from "./components/Elements/ElementsDashboard";
 
 /**
  * App.tsx serves as the main entry point and demonstrates:
@@ -25,13 +24,10 @@ import { ElementsDashboard } from "./components/Elements/ElementsDashbaord";
  * you might need when building your own Webflow App.
  */
 
-// React Query setup - Used for managing API calls and caching
-const queryClient = new QueryClient();
-
 // This is the main App Component. It handles the initial setup and rendering of the Dashboard.
 function AppContent() {
   const [hasClickedFetch, setHasClickedFetch] = useState(false);
-  const { user, sessionToken, checkAndGetToken, logout } = useAuth();
+  const { user, sessionToken, exchangeAndVerifyIdToken, logout } = useAuth();
   const { sites, isLoading, isError, error, fetchSites } = useSites(
     sessionToken,
     hasClickedFetch
@@ -52,7 +48,7 @@ function AppContent() {
       );
 
       if (storedUser && !wasExplicitlyLoggedOut) {
-        checkAndGetToken();
+        exchangeAndVerifyIdToken();
       }
       hasCheckedToken.current = true;
     }
@@ -61,14 +57,18 @@ function AppContent() {
     const handleAuthComplete = async (event: MessageEvent) => {
       if (event.data === "authComplete") {
         localStorage.removeItem("explicitly_logged_out");
-        // Don't reset hasCheckedToken here, as we don't need to recheck
-        await checkAndGetToken();
+        await exchangeAndVerifyIdToken();
       }
     };
+
     // Add the event listener for the authentication complete event
     window.addEventListener("message", handleAuthComplete);
-    return () => window.removeEventListener("message", handleAuthComplete);
-  }, [checkAndGetToken]);
+    return () => {
+      window.removeEventListener("message", handleAuthComplete);
+      // Reset the check on unmount so it can run again if needed
+      hasCheckedToken.current = false;
+    };
+  }, [exchangeAndVerifyIdToken]);
 
   // Handle the fetch sites button click
   const handleFetchSites = () => {
@@ -121,11 +121,9 @@ function AppContent() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider theme={theme}>
-        <AppContent />
-      </ThemeProvider>
-    </QueryClientProvider>
+    <ThemeProvider theme={theme}>
+      <AppContent />
+    </ThemeProvider>
   );
 }
 

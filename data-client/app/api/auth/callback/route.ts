@@ -36,68 +36,77 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "No code provided" }, { status: 400 });
   }
 
-  // Get Access Token
-  const accessToken = await WebflowClient.getAccessToken({
-    clientId: process.env.WEBFLOW_CLIENT_ID!,
-    clientSecret: process.env.WEBFLOW_CLIENT_SECRET!,
-    code: code,
-  });
+  try {
+    // Get Access Token
+    const accessToken = await WebflowClient.getAccessToken({
+      clientId: process.env.WEBFLOW_CLIENT_ID!,
+      clientSecret: process.env.WEBFLOW_CLIENT_SECRET!,
+      code: code,
+    });
 
-  // Instantiate the Webflow Client
-  const webflow = new WebflowClient({ accessToken });
+    // Instantiate the Webflow Client
+    const webflow = new WebflowClient({ accessToken });
 
-  // Get Site ID to pair with the  access token
-  const sites = await webflow.sites.list();
+    // Get Site ID to pair with the access token
+    const sites = await webflow.sites.list();
+    const authInfo = await webflow.token.introspect();
 
-  // Store each site's ID and access token pair in the database for future API requests
-  sites?.sites?.forEach((site) => {
-    db.insertSiteAuthorization(site.id, accessToken);
-  });
+    // Store site authorizations in parallel
+    const siteList = sites?.sites ?? [];
+    if (siteList.length > 0) {
+      await Promise.all(
+        siteList.map((site) => db.insertSiteAuthorization(site.id, accessToken))
+      );
+    }
 
-  const authInfo = await webflow.token.introspect()
-  console.log(authInfo)
+    // Check if the authorization request came from our Webflow designer extension
+    const isAppPopup = searchParams.get("state") === "webflow_designer";
+    console.log("isAppPopup", isAppPopup);
 
-  // Check if the authorization request came from our Webflow designer extension
-  const isAppPopup = searchParams.get("state") === "webflow_designer";
-  console.log("isAppPopup", isAppPopup)
-
-  // If the request is from a popup window, return HTML to close the window
-  if (isAppPopup) {
-    return new NextResponse(
-      `<!DOCTYPE html>
-      <html>
-        <head>
-          <title>Authorization Complete</title>
-        </head>
-        <body>
-          <script>
-            window.opener.postMessage('authComplete', '*');
-            window.close();
-          </script>
-        </body>
-      </html>`,
-      {
-        headers: {
-          "Content-Type": "text/html",
-        },
-      }
-    );
-  } else {
-    // If authorized to the Workspace - redirect to the Dashboard
-    const workspaceIds = authInfo?.authorization?.authorizedTo?.workspaceIds
-    console.log("workspaceIds", workspaceIds)
-    if (workspaceIds && workspaceIds.length > 0) {
-      return NextResponse.redirect(
-        `https:/webflow.com/dashboard?workspace=${workspaceIds[0]}`
+    // If the request is from a popup window, return HTML to close the window
+    if (isAppPopup) {
+      return new NextResponse(
+        `<!DOCTYPE html>
+        <html>
+          <head>
+            <title>Authorization Complete</title>
+          </head>
+          <body>
+            <script>
+              window.opener.postMessage('authComplete', '*');
+              window.close();
+            </script>
+          </body>
+        </html>`,
+        {
+          headers: {
+            "Content-Type": "text/html",
+          },
+        }
       );
     } else {
-      // If authorized to the Site - redirect to the Designer Extension
-      const firstSite = sites?.sites?.[0];
-      if (firstSite) {
+      // If authorized to the Workspace - redirect to the Dashboard
+      const workspaceIds =
+        authInfo?.authorization?.authorizedTo?.workspaceIds ?? [];
+      if (workspaceIds.length > 0) {
         return NextResponse.redirect(
-          `https://${firstSite.shortName}.design.webflow.com?app=${process.env.WEBFLOW_CLIENT_ID}`
+          `https:/webflow.com/dashboard?workspace=${workspaceIds[0]}`
         );
+      } else {
+        // If authorized to the Site - redirect to the Designer Extension
+        const firstSite = siteList[0];
+        if (firstSite) {
+          return NextResponse.redirect(
+            `https://${firstSite.shortName}.design.webflow.com?app=${process.env.WEBFLOW_CLIENT_ID}`
+          );
+        }
       }
     }
-    }
+  } catch (error) {
+    console.error("Error in callback:", error);
+    return NextResponse.json(
+      { error: "Failed to process authorization" },
+      { status: 500 }
+    );
+  }
 }

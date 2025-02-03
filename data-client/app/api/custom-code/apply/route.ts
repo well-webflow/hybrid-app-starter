@@ -5,16 +5,20 @@ import jwt from "../../../lib/utils/jwt";
 
 // Apply Custom Code
 export async function POST(request: NextRequest) {
-  console.log(request, "request");
   try {
+    // Clone and log only the request body
+    const clonedRequest = request.clone();
+    const body = await clonedRequest.json();
+    console.log("Request body:", body);
+
     const accessToken = await jwt.verifyAuth(request);
     if (!accessToken) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Get Request Body
-    const { targetType, targetId, scriptId, location, version } =
-      await request.json();
+    const { targetType, targetId, scriptId, location, version } = body;
+    console.log(targetType, targetId, scriptId, location, version, "body");
 
     // Validate Request Body
     if (!targetType || !targetId || !scriptId || !location || !version) {
@@ -57,7 +61,10 @@ export async function POST(request: NextRequest) {
     // Return Result
     return NextResponse.json({ result }, { status: 200 });
   } catch (error) {
-    console.error("Error applying custom code:", error);
+    console.error(
+      "Error applying custom code:",
+      error instanceof Error ? error.message : error
+    );
     return NextResponse.json(
       { error: "Failed to apply custom code" },
       { status: 500 }
