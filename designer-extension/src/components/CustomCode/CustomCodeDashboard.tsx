@@ -1,13 +1,13 @@
-import { useState, useEffect } from "react";
-import { Box, Tab, Tabs, Paper, CircularProgress } from "@mui/material";
+import { useState, useEffect } from 'react';
+import { Box, Tab, Tabs, Paper, CircularProgress } from '@mui/material';
 import {
   useScriptRegistration,
   useScriptSelection,
-} from "../../hooks/useCustomCode";
-import { ScriptRegistration, ScriptsList, SiteTab, PagesTab } from "./";
-import { useAuth } from "../../hooks/useAuth";
-import { CustomCode } from "../../types/types";
-import { useSites } from "../../hooks/useSites";
+} from '../../hooks/useCustomCode';
+import { ScriptRegistration, ScriptsList, SiteTab, PagesTab } from './';
+import { useAuth } from '../../hooks/useAuth';
+import { CustomCode } from '../../types/types';
+import { useSites } from '../../hooks/useSites';
 
 /**
  * Props interface for the TabPanel component
@@ -65,7 +65,7 @@ export function CustomCodeDashboard() {
   } = useSites(sessionToken, true);
 
   // Navigation state
-  const [mainTab, setMainTab] = useState<"register" | "manage">("register");
+  const [mainTab, setMainTab] = useState<'register' | 'manage'>('register');
   const [applicationTab, setApplicationTab] = useState(0);
 
   // Hook integrations for script management
@@ -78,13 +78,13 @@ export function CustomCodeDashboard() {
   } = useScriptSelection();
 
   const { registerScript, isRegistering } = useScriptRegistration(
-    sessionToken || "",
-    currentSite?.id || ""
+    sessionToken || '',
+    currentSite?.id || ''
   );
 
   // Fetch scripts when switching to manage tab or when site/session changes
   useEffect(() => {
-    if (mainTab === "manage" && currentSite?.id && sessionToken) {
+    if (mainTab === 'manage' && currentSite?.id && sessionToken) {
       fetchScripts(currentSite.id, sessionToken);
     }
   }, [mainTab, currentSite?.id, sessionToken, fetchScripts]);
@@ -92,7 +92,7 @@ export function CustomCodeDashboard() {
   // Show loading state while sites are being fetched
   if (isCurrentSiteLoading || isSitesLoading) {
     return (
-      <Box sx={{ width: "100%", p: 2, textAlign: "center" }}>
+      <Box sx={{ width: '100%', p: 2, textAlign: 'center' }}>
         <CircularProgress size={20} sx={{ mr: 1 }} />
         Loading site information...
       </Box>
@@ -102,7 +102,7 @@ export function CustomCodeDashboard() {
   // Show message if no current site is available
   if (!currentSite) {
     return (
-      <Box sx={{ width: "100%", p: 2 }}>
+      <Box sx={{ width: '100%', p: 2 }}>
         Unable to load site information. Please make sure you're in a Webflow
         Designer session.
       </Box>
@@ -117,9 +117,9 @@ export function CustomCodeDashboard() {
   const handleRegisterCode = async (code: string, isHosted: boolean) => {
     try {
       await registerScript(code, isHosted);
-      await fetchScripts(currentSite?.id || "", sessionToken || "");
+      await fetchScripts(currentSite?.id || '', sessionToken || '');
     } catch (error) {
-      console.error("Error registering code:", error);
+      console.error('Error registering code:', error);
     }
   };
 
@@ -130,7 +130,7 @@ export function CustomCodeDashboard() {
    */
   const handleMainTabChange = (
     _event: React.SyntheticEvent,
-    newValue: "register" | "manage"
+    newValue: 'register' | 'manage'
   ) => {
     setMainTab(newValue);
   };
@@ -159,9 +159,9 @@ export function CustomCodeDashboard() {
    * Wrapper for applying scripts to site
    */
   const handleApplyToSite = (
-    targetType: "site",
+    targetType: 'site',
     targetId: string,
-    location: "header" | "footer",
+    location: 'header' | 'footer',
     sessionToken: string
   ) => {
     return applyScript({
@@ -176,33 +176,33 @@ export function CustomCodeDashboard() {
    * Wrapper for applying scripts to pages
    */
   const handleApplyToPages = (
-    targetType: "page",
+    targetType: 'page',
     pageIds: string[],
-    location: "header" | "footer"
+    location: 'header' | 'footer'
   ) => {
     return applyScript({
       targetType,
       targetId: pageIds,
       location,
-      sessionToken: sessionToken || "",
+      sessionToken: sessionToken || '',
     });
   };
 
   return (
-    <Box sx={{ width: "100%", pb: "100px" }}>
+    <Box sx={{ width: '100%', pb: '100px' }}>
       <Tabs value={mainTab} onChange={handleMainTabChange}>
         <Tab value="register" label="Register Script" />
         <Tab value="manage" label="Manage Scripts" />
       </Tabs>
 
-      {mainTab === "register" && (
+      {mainTab === 'register' && (
         <ScriptRegistration
           onRegister={handleRegisterCode}
           isRegistering={isRegistering}
         />
       )}
 
-      {mainTab === "manage" && (
+      {mainTab === 'manage' && (
         <>
           <Paper elevation={0} sx={{ mb: 2 }}>
             <ScriptsList
@@ -217,7 +217,7 @@ export function CustomCodeDashboard() {
               <Tabs
                 value={applicationTab}
                 onChange={handleApplicationTabChange}
-                sx={{ borderBottom: 1, borderColor: "divider" }}
+                sx={{ borderBottom: 1, borderColor: 'divider' }}
               >
                 <Tab label="Apply to Site" />
                 <Tab label="Apply to Pages" />

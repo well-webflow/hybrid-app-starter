@@ -1,13 +1,13 @@
 const base_url = import.meta.env.VITE_NEXTJS_API_URL;
-import { ScriptRegistrationRequest, CodeApplication } from "../../types/types";
+import { ScriptRegistrationRequest, CodeApplication } from '../../types/types';
 
 export const customCodeApi = {
   // Register a new script
   registerScript: async (params: ScriptRegistrationRequest, token: string) => {
     const response = await fetch(`${base_url}/api/custom-code/register`, {
-      method: "POST",
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify(params),
@@ -31,9 +31,9 @@ export const customCodeApi = {
   // Apply script to site or page
   applyScript: async (params: CodeApplication, token: string) => {
     const response = await fetch(`${base_url}/api/custom-code/apply`, {
-      method: "POST",
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify(params),
@@ -59,7 +59,7 @@ export const customCodeApi = {
   getPagesStatus: async (pageIds: string[], token: string) => {
     const response = await fetch(
       `${base_url}/api/custom-code/status?targetType=page&targetIds=${pageIds.join(
-        ","
+        ','
       )}`,
       {
         headers: {
@@ -78,8 +78,8 @@ export const customCodeApi = {
   ) => {
     try {
       // Validate siteId
-      if (!siteId || siteId === "page") {
-        console.warn("Invalid siteId provided to getBatchStatus:", siteId);
+      if (!siteId || siteId === 'page') {
+        console.warn('Invalid siteId provided to getBatchStatus:', siteId);
         return {};
       }
 
@@ -112,7 +112,7 @@ export const customCodeApi = {
       };
     } catch (error) {
       console.error(
-        "Error in getBatchStatus:",
+        'Error in getBatchStatus:',
         { siteId, pageIdsLength: pageIds?.length },
         error
       );

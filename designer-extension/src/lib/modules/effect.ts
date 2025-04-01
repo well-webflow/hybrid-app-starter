@@ -1,0 +1,187 @@
+import { faBolt } from '@fortawesome/free-solid-svg-icons';
+import { WaterfallCategory } from '../../types/waterfall-types';
+
+export default function effectCategory() {
+  let config: WaterfallCategory = {
+    name: 'Effect',
+    id: 'effect',
+    icon: faBolt,
+    summary: 'Set the slide transition effect',
+    description: 'Set the slide transition effect',
+    groups: [
+      {
+        name: 'Coverflow',
+        id: 'coverflow',
+        items: [
+          {
+            name: 'Coverflow Depth',
+            attr: 'coverflow-depth',
+            swiperDefault: '100',
+            value: '',
+            description: 'Depth offset in px (slides translate in Z axis)',
+            tested: true,
+          },
+          {
+            name: 'Coverflow Modifier',
+            attr: 'coverflow-modifier',
+            swiperDefault: '1',
+            value: '',
+            description: 'Effect multiplier',
+            tested: true,
+          },
+          {
+            name: 'Coverflow Rotate',
+            attr: 'coverflow-rotate',
+            swiperDefault: '50',
+            value: '',
+            description: 'Slide rotate in degrees',
+            tested: true,
+          },
+          {
+            name: 'Coverflow Scale',
+            attr: 'coverflow-scale',
+            swiperDefault: '1',
+            value: '',
+            description: 'Slide scale effect',
+            tested: true,
+          },
+          {
+            name: 'Coverflow Slide Shadows',
+            attr: 'coverflow-slide-shadows',
+            swiperDefault: 'true',
+            value: '',
+            description: 'Enables slides shadows',
+            tested: true,
+          },
+          {
+            name: 'Coverflow Stretch',
+            attr: 'coverflow-stretch',
+            swiperDefault: '0',
+            value: '',
+            description: 'Stretch space between slides (in px)',
+            tested: false,
+          },
+        ],
+      },
+      {
+        name: 'Flip',
+        id: 'flip',
+        items: [
+          {
+            name: 'Flip Limit Rotation',
+            attr: 'flip-limit-rotation',
+            swiperDefault: 'true',
+            value: '',
+            description: 'Limit edge slides rotation',
+            tested: false,
+          },
+          {
+            name: 'Flip Slide Shadows',
+            attr: 'flip-slide-shadows',
+            swiperDefault: 'true',
+            value: '',
+            description: 'Enables slides shadows',
+            tested: false,
+          },
+        ],
+      },
+      {
+        name: 'Cube',
+        id: 'cube',
+        items: [
+          {
+            name: 'Cube Shadow',
+            attr: 'cube-shadow',
+            swiperDefault: 'true',
+            value: '',
+            description: 'Enables main slider shadow',
+            tested: false,
+          },
+          {
+            name: 'Cube Shadow Offset',
+            attr: 'cube-shadow-offset',
+            swiperDefault: '20',
+            value: '',
+            description: 'Main shadow offset in px',
+            tested: false,
+          },
+          {
+            name: 'Cube Shadow Scale',
+            attr: 'cube-shadow-scale',
+            swiperDefault: '0.94',
+            value: '',
+            description: 'Main shadow scale ratio',
+            tested: false,
+          },
+          {
+            name: 'Cube Slide Shadows',
+            attr: 'cube-slide-shadows',
+            swiperDefault: 'true',
+            value: '',
+            description: 'Enables slides shadows',
+            tested: false,
+          },
+        ],
+      },
+      {
+        name: 'Cards',
+        id: 'cards',
+        items: [
+          {
+            name: 'Cards Per Slide Offset',
+            attr: 'cards-per-slide-offset',
+            swiperDefault: '8',
+            value: '',
+            description: 'Offset distance per slide (in px)',
+            tested: true,
+          },
+          {
+            name: 'Cards Per Slide Rotate',
+            attr: 'cards-per-slide-rotate',
+            swiperDefault: '2',
+            value: '',
+            description: 'Rotate angle per slide (in degrees)',
+            tested: true,
+          },
+          {
+            name: 'Cards Rotate',
+            attr: 'cards-rotate',
+            swiperDefault: 'true',
+            value: '',
+            description: 'Enables cards rotation',
+            tested: true,
+          },
+          {
+            name: 'Cards Slide Shadows',
+            attr: 'cards-slide-shadows',
+            swiperDefault: 'true',
+            value: '',
+            description: 'Enables slides shadows',
+            tested: false,
+          },
+        ],
+      },
+    ],
+    items: [
+      {
+        name: 'Effect',
+        attr: 'effect',
+        swiperDefault: 'slide',
+        value: '',
+        description: 'Select an effect for the slide transitions',
+        type: 'select',
+        options: [
+          'slide',
+          'fade',
+          'cube',
+          'coverflow',
+          'flip',
+          'creative',
+          'cards',
+        ],
+        tested: true,
+      },
+    ],
+  };
+  return config;
+}

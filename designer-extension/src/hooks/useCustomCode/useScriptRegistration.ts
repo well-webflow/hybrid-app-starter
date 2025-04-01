@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { customCodeApi } from "../../services/customCode";
-import { CustomCode, ScriptRegistrationRequest } from "../../types/types";
+import { useState } from 'react';
+import { customCodeApi } from '../../services/customCode';
+import { CustomCode, ScriptRegistrationRequest } from '../../types/types';
 
 /**
  * Hook for managing script registration in Webflow
@@ -29,8 +29,8 @@ export function useScriptRegistration(sessionToken: string, siteId: string) {
     setIsRegistering(true);
     try {
       const scriptData: CustomCode = {
-        displayName: `Boilerplate Script ${Date.now()}`,
-        version: "1.0.0",
+        displayName: `Waterfall`,
+        version: '1.0.0',
         ...(isHosted ? { hostedLocation: code } : { sourceCode: code }),
       };
 
@@ -40,21 +40,33 @@ export function useScriptRegistration(sessionToken: string, siteId: string) {
         scriptData,
       };
 
-      const { result } = await customCodeApi.registerScript(
+      const { response, error } = await customCodeApi.registerScript(
         request,
         sessionToken
       );
-      return result;
+
+      if (error) throw error;
+
+      return response;
     } catch (error) {
-      console.error("Error registering script:", error);
+      console.error('Error registering script:', error);
       throw error;
     } finally {
       setIsRegistering(false);
     }
   };
 
+  const checkIfCodeRegistered = async (registeredScripts: CustomCode[]) => {
+    let registered = registeredScripts.some(
+      (script) => script.displayName === 'Waterfall'
+    );
+    console.log(registered);
+    return registered;
+  };
+
   return {
     registerScript,
     isRegistering,
+    checkIfCodeRegistered,
   };
 }
